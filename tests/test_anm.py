@@ -1,4 +1,4 @@
-import anmld_python.models.anm as ANM
+import anmld_python.anm as ANM
 
 import numpy as np
 import prody
