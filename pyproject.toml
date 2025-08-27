@@ -29,7 +29,14 @@ build-backend = "uv_build"
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+
+[tool.ruff]
+# Allow lines to be as long as 120.
+line-length = 120
+
 [dependency-groups]
 dev = [
     "ipython>=9.4.0",
+    "prody>=2.6.1",
+    "pytest>=8.4.1",
 ]
