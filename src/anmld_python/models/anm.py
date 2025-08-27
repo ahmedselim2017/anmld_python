@@ -1,7 +1,10 @@
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 
 
+@jax.jit
 def build_hessian(coords: jax.Array, cutoff: float = 15.0, gamma: float = 1.0) -> jax.Array:
     N_nodes = coords.shape[0]
     sq_cutoff = cutoff**2
@@ -31,3 +34,18 @@ def build_hessian(coords: jax.Array, cutoff: float = 15.0, gamma: float = 1.0) -
     hessian = superelements.transpose(0, 2, 1, 3).reshape(3 * N_nodes, 3 * N_nodes)
 
     return hessian
+
+
+def calc_modes(
+    hessian: jax.Array,
+    remove_trivial_modes: bool = True,
+    trivial_cutoff: float = 1e-7,
+) -> tuple[jax.Array, jax.Array]:
+    L, Q = jnp.linalg.eigh(hessian)
+
+    if remove_trivial_modes:
+        zero_mask = L > trivial_cutoff
+        L = L[zero_mask]
+        Q = Q[:, zero_mask]
+
+    return L, Q
