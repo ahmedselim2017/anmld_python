@@ -28,10 +28,10 @@ def test_calc_modes():
     calphas = prody_structure.select('calpha')  # type: ignore
     prody_anm = prody.ANM('')
     prody_anm.buildHessian(calphas)
-    prody_anm.calcModes(3*len(calphas))
+    prody_anm.calcModes(30)
 
     hessian = ANM.build_hessian(calphas.getCoords())
-    L, Q = ANM.calc_modes(hessian)
+    L, Q, *_ = ANM.calc_modes(hessian)
 
     # take the abs of the eigenvectors before comparing them as the phase of
     # the eigenvectors are arbitrary.
