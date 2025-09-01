@@ -35,7 +35,7 @@ def build_hessian(
     cutoff_mask = (sq_dists < sq_cutoff) & (sq_dists > 0)
 
     # (N_nodes, N_nodes). 0 when sq_dist is 0
-    inv_sq_dist = jnp.where(cutoff_mask, 1.0 / sq_dists, 0)
+    inv_sq_dist = jnp.where(cutoff_mask, 1.0 / (sq_dists), 0)
 
     # (N_nodes, N_nodes, 3, 3)
     sup_els = (
@@ -77,8 +77,6 @@ def calc_modes(
         (N_nodes, mode_max) X-eigenvalues array
         (N_nodes, mode_max) Y-eigenvalues array
         (N_nodes, mode_max) Z-eigenvalues array
-        (N_nodes, mode_max) Slow non-weighted ANM modes array
-        (N_nodes, mode_max) Slow weighted ANM modes array
 
         TODO: do we need to return all these arrays?
     """
@@ -91,7 +89,4 @@ def calc_modes(
     Vy = V[jnp.arange(1, hessian.shape[0], 3), :]
     Vz = V[jnp.arange(2, hessian.shape[0], 3), :]
 
-    slow_modes_non_weighted = jnp.sqrt(Vx**2 + Vy**2 + Vz**2)
-    slow_modes_weighted = slow_modes_non_weighted / W
-
-    return W, V, Vx, Vy, Vz, slow_modes_non_weighted, slow_modes_weighted
+    return W, V, Vx, Vy, Vz

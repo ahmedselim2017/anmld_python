@@ -22,9 +22,10 @@ class AmberSettings(BaseSettings):
 
 class ANMLDSettings(BaseSettings):
     n_cycle: PositiveInt = Field(100)
-    rcut_GNM: PositiveFloat = Field(10)
     rcut_ANM: PositiveFloat = Field(8)
+    gamma_ANM: float = Field(1.0)
     DF: PositiveFloat = Field(0.6)
+    DF_SC_ratio: PositiveFloat = Field(1)
     max_mode: PositiveInt = Field(30)
     version: int = Field(0)
 
@@ -35,6 +36,7 @@ class AppSettings(BaseSettings):
     structure_target: FilePath = Field(alias="target")
     out_dir: NewPath = Field(Path("out"))
     logging_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+    mode_selection: Literal["MATLAB"] = "MATLAB"
 
     anmld_settings: ANMLDSettings = Field(alias="ANMLD")
     amber_settings: AmberSettings = Field(alias="AMBER")
