@@ -44,6 +44,11 @@ class PathSettings(BaseSettings):
     amber_pdb_target_min_pdb: Path     = Path("AMBER_pdb_target_min.pdb")
     amber_pdb_target_min_c_pdb: Path   = Path("AMBER_pdb_target_min_C.pdb")
 
+    step_raw_pdb_format             = "RAW_step_{step}.pdb"
+    step_amber_tleap_anm_pdb_format = "tleap_anm_pdbs_step_{step}.in"
+    step_amber_tleap_coord          = "RAW_step_{step}.coord"
+    
+
 
 class AmberSettings(BaseSettings):
     temp: PositiveFloat = Field(310)  # TODO: float or int?
