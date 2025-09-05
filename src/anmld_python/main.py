@@ -17,10 +17,24 @@ def main(settings_path: Path):
         AS = AppSettings(**tomllib.load(settings_f))
 
     logger.remove()
-    logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
+    logger_format = (
+        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+        "<level>{level: <8}</level> | "
+        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+        "<level>STEP {extra['step']}</level> | "
+        "<level>{message}</level> | "
+        "<level>{extra}</level>"
+    )
+    logger.add(
+        lambda msg: tqdm.write(msg, end=""),
+        colorize=True,
+        format=logger_format,
+    )
 
-    logger.info("Starting ANM-LD python.")
-    logger.info(f"Version: {importlib.metadata.version('anmld_python')}")
+    step_logger = logger.bind(step=-1)
+
+    step_logger.info("Starting ANM-LD python.")
+    step_logger.info(f"Version: {importlib.metadata.version('anmld_python')}")
 
     PS = AS.path_settings
     AS.structure_init = AS.structure_init.absolute()
@@ -28,15 +42,17 @@ def main(settings_path: Path):
     AS.out_dir = AS.out_dir.absolute()
 
     AS.out_dir.mkdir(parents=True)
-    logger.trace(f"Created output directory at {AS.out_dir}")
+    step_logger.trace(f"Created output directory at {AS.out_dir}")
 
-    logger.add(AS.out_dir / "anmld.log", serialize=True)
-    amberLogger = logger.bind(isAMBER=True)
+    step_logger.add(AS.out_dir / "anmld.log", serialize=True)
 
     cmd_load = f"module load {AS.amber_settings.module_name} && "
 
     for cycle in tqdm(range(AS.anmld_settings.n_cycle), desc="Running ANM-LD"):
-        logger.info(f"Starting cycle: {cycle}")
+        step_logger = logger.bind(step=cycle)
+        amber_logger = step_logger.bind(isAMBER=True)
+
+        step_logger.info("Starting step")
 
         if cycle == 0:
             with open(AS.out_dir / PS.amber_min_in, "w") as AMBER_min_in_f:
@@ -55,7 +71,7 @@ def main(settings_path: Path):
                       igb = 1,
                      &end""")
                 )
-                amberLogger.trace(
+                amber_logger.trace(
                     "Wrote file at {path}", path=AS.out_dir / PS.amber_min_in
                 )
 
@@ -86,7 +102,7 @@ def main(settings_path: Path):
                       cut = 1000.0,
                      &end""")
                 )
-                amberLogger.trace(
+                amber_logger.trace(
                     "Wrote file at {path}", path=AS.out_dir / PS.amber_sim_in
                 )
 
@@ -102,7 +118,7 @@ def main(settings_path: Path):
                     saveamberparm y {AS.out_dir / PS.amber_pdb_target_top} {AS.out_dir / PS.amber_pdb_target_coord}
                     quit""")
                 )
-                amberLogger.trace(
+                amber_logger.trace(
                     "Wrote file at {path}",
                     path=AS.out_dir / PS.amber_tleap_init_in,
                 )
@@ -114,7 +130,7 @@ def main(settings_path: Path):
                 cwd=AS.out_dir,
                 check=True,
             )
-            amberLogger.debug("Ran {cmd}", cmd=cmd_load + cmd_tleap)
+            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_tleap)
 
             cmd_amber_initial = dedent(f"""\
                                     $AMBERHOME/bin/pmemd.cuda -O                                    \\
@@ -140,14 +156,14 @@ def main(settings_path: Path):
                 cwd=AS.out_dir,
                 check=True,
             )
-            amberLogger.debug("Ran {cmd}", cmd=cmd_load + cmd_amber_initial)
+            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_amber_initial)
             subprocess.run(
                 cmd_load + cmd_amber_target,
                 shell=True,
                 cwd=AS.out_dir,
                 check=True,
             )
-            amberLogger.debug("Ran {cmd}", cmd=cmd_load + cmd_amber_target)
+            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_amber_target)
 
             # create initial_min.rst (rewrite to be able to read by ambmsk,
             # version problem)
@@ -160,7 +176,7 @@ def main(settings_path: Path):
                             trajin {AS.out_dir / PS.amber_pdb_init_min_rst}
                             trajout {AS.out_dir / PS.amber_pdb_rewrite_init_min_rst} restart""")
                 )
-                amberLogger.trace(
+                amber_logger.trace(
                     "Wrote file at {path}",
                     path=AS.out_dir / PS.amber_ptraj_rewrite_init_in,
                 )
@@ -174,7 +190,7 @@ def main(settings_path: Path):
                 cwd=AS.out_dir,
                 check=True,
             )
-            amberLogger.debug("Ran {cmd}", cmd=cmd_load + cmd_rewrite)
+            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_rewrite)
 
             # Create AMBER_target_min_algn.rst
             with open(
@@ -190,7 +206,7 @@ def main(settings_path: Path):
                             rms ref [initial-ref]  :1-{RESNUM}@CA out {AS.out_dir / PS.amber_rms_target_align_dat} 
                             trajout {AS.out_dir / PS.amber_target_min_algn} restart parm [target-top]""")  # TODO: RESNUM
                 )
-                amberLogger.trace(
+                amber_logger.trace(
                     "Wrote file at {path}",
                     path=AS.out_dir / PS.amber_ptraj_align_target2initial_in,
                 )
@@ -204,7 +220,7 @@ def main(settings_path: Path):
                 cwd=AS.out_dir,
                 check=True,
             )
-            amberLogger.debug("Ran {cmd}", cmd=cmd_load + cmd_align)
+            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_align)
 
             # create initial all-atom and alpha C pdbs
             cmd_AA_init = dedent(f"""\
@@ -219,7 +235,7 @@ def main(settings_path: Path):
                     stdout=out_f,
                     check=True,
                 )
-            amberLogger.debug("Ran {cmd}", cmd=cmd_load + cmd_AA_init)
+            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_AA_init)
 
             cmd_CA_init = cmd_AA_init + " -find @CA"
             with open(
@@ -232,7 +248,7 @@ def main(settings_path: Path):
                     stdout=out_f,
                     check=True,
                 )
-            amberLogger.debug("Ran {cmd}", cmd=cmd_load + cmd_CA_init)
+            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_CA_init)
 
             cmd_AA_target = dedent(f"""\
                     ambmask -p {AS.out_dir / PS.amber_pdb_target_top}  \\
@@ -246,7 +262,7 @@ def main(settings_path: Path):
                     stdout=out_f,
                     check=True,
                 )
-            amberLogger.debug("Ran {cmd}", cmd=cmd_load + cmd_AA_target)
+            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_AA_target)
 
             cmd_CA_target = cmd_AA_target + " -find @CA"
             with open(AS.out_dir / PS.amber_pdb_target_min_c_pdb, "w") as out_f:
@@ -257,7 +273,7 @@ def main(settings_path: Path):
                     stdout=out_f,
                     check=True,
                 )
-            amberLogger.debug("Ran {cmd}", cmd=cmd_load + cmd_CA_target)
+            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_CA_target)
 
 
 if __name__ == "__main__":

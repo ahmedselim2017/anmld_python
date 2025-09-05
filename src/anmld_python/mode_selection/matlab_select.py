@@ -1,9 +1,9 @@
-import logging
 from typing import cast
 
 from biotite.structure import AtomArray
 import jax
 import jax.numpy as jnp
+import loguru
 import numpy as np
 
 from anmld_python.settings import AppSettings
@@ -52,13 +52,13 @@ def matlab_select(
 
 
 def generate_structures(
-    step: int,
-    app_settings: AppSettings,
     aa_init: AtomArray,
     aa_target: AtomArray,
     Vx_init: jax.Array,
     Vy_init: jax.Array,
     Vz_init: jax.Array,
+    step_logger: loguru.Logger,
+    app_settings: AppSettings,
 ) -> AtomArray:
     N_nodes = Vx_init.shape[0]
 
@@ -85,8 +85,8 @@ def generate_structures(
         Vy_init=Vy_init,
         Vz_init=Vz_init,
     )
-    logging.info(f"{step=} | Selected mode: {sel_mode_idx[0] + 1}")
-    logging.info(f"{step=} | Selected mode cosine sim: {sel_mode_cos_sim[0]}")
+    step_logger.info(f"Selected mode: {sel_mode_idx[0] + 1}")
+    step_logger.info(f"Selected mode cosine sim: {sel_mode_cos_sim[0]}")
 
     sel_mode_sign = jnp.sign(sel_mode_cos_sim)
 
