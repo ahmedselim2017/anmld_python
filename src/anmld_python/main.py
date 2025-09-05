@@ -48,13 +48,13 @@ def main(settings_path: Path):
 
     cmd_load = f"module load {AS.amber_settings.module_name} && "
 
-    for cycle in tqdm(range(AS.anmld_settings.n_cycle), desc="Running ANM-LD"):
-        step_logger = logger.bind(step=cycle)
+    for step in tqdm(range(AS.anmld_settings.n_steps), desc="Running ANM-LD"):
+        step_logger = logger.bind(step=step)
         amber_logger = step_logger.bind(isAMBER=True)
 
         step_logger.info("Starting step")
 
-        if cycle == 0:
+        if step == 0:
             with open(AS.out_dir / PS.amber_min_in, "w") as AMBER_min_in_f:
                 AMBER_min_in_f.write(
                     dedent(f"""\

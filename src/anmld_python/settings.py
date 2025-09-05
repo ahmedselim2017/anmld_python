@@ -54,7 +54,7 @@ class AmberSettings(BaseSettings):
 
 
 class ANMLDSettings(BaseSettings):
-    n_cycle: PositiveInt = Field(100)
+    n_steps: PositiveInt = Field(100)
     rcut_ANM: PositiveFloat = Field(8)
     gamma_ANM: float = Field(1.0)
     DF: PositiveFloat = Field(0.6)
