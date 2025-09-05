@@ -6,9 +6,12 @@ import subprocess
 import tomllib
 
 from tqdm import tqdm
+import numpy as np
 import typer
 
+from anmld_python.runner import run_step
 from anmld_python.settings import AppSettings
+from anmld_python.tools import sanitize_pdb
 
 
 @logger.catch(reraise=True)
@@ -47,6 +50,11 @@ def main(settings_path: Path):
     step_logger.add(AS.out_dir / "anmld.log", serialize=True)
 
     cmd_load = f"module load {AS.amber_settings.module_name} && "
+
+    aa_init = sanitize_pdb(AS.structure_init, PS.sanitized_init_pdb_path)
+    aa_target = sanitize_pdb(AS.structure_target, PS.sanitized_target_pdb_path)
+    resnum: int = np.unique(aa_init.res_id).size
+    step_logger.info("Sanitized initial and target structures")
 
     for step in tqdm(range(AS.anmld_settings.n_steps), desc="Running ANM-LD"):
         step_logger = logger.bind(step=step)
@@ -112,9 +120,9 @@ def main(settings_path: Path):
                 AMBER_tleap_initial_f.write(
                     dedent(f"""\
                     source {AS.amber_settings.forcefield}
-                    x=loadpdb {AS.structure_init}
+                    x=loadpdb {PS.sanitized_init_pdb_path}
                     saveamberparm x {AS.out_dir / PS.amber_pdb_init_top} {AS.out_dir / PS.amber_pdb_init_coord}
-                    y=loadpdb {AS.structure_target}
+                    y=loadpdb {PS.sanitized_target_pdb_path}
                     saveamberparm y {AS.out_dir / PS.amber_pdb_target_top} {AS.out_dir / PS.amber_pdb_target_coord}
                     quit""")
                 )
@@ -203,7 +211,7 @@ def main(settings_path: Path):
                             parm {AS.out_dir / PS.amber_pdb_target_top} [target-top]
                             trajin {AS.out_dir / PS.amber_pdb_target_min_rst} parm [target-top]
                             reference {AS.out_dir / PS.amber_pdb_init_min_rst} parm [initial-top] [initial-ref]
-                            rms ref [initial-ref]  :1-{RESNUM}@CA out {AS.out_dir / PS.amber_rms_target_align_dat} 
+                            rms ref [initial-ref]  :1-{resnum}@CA out {AS.out_dir / PS.amber_rms_target_align_dat} 
                             trajout {AS.out_dir / PS.amber_target_min_algn} restart parm [target-top]""")  # TODO: RESNUM
                 )
                 amber_logger.trace(
@@ -274,6 +282,7 @@ def main(settings_path: Path):
                     check=True,
                 )
             amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_CA_target)
+
 
 
 if __name__ == "__main__":

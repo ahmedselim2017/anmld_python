@@ -12,6 +12,9 @@ from pydantic_settings import BaseSettings
 
 
 class PathSettings(BaseSettings):
+    sanitized_init_pdb_path: Path = Path("sanitized_init.pdb")
+    sanitized_target_pdb_path: Path = Path("sanitized_target.pdb")
+
     amber_min_in: Path = Path("AMBER_min.in")
     amber_sim_in: Path = Path("AMBER_sim.in")
 
