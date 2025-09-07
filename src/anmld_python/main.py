@@ -24,7 +24,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
         "<level>{level: <8}</level> | "
         "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-        "<level>STEP {extra['step']}</level> | "
+        "<level>STEP {extra[step]}</level> | "
         "<level>{message}</level> | "
         "<level>{extra}</level>"
     )

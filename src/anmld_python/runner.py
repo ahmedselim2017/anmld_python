@@ -1,7 +1,7 @@
+from __future__ import annotations
 from textwrap import dedent
 import subprocess
 
-from loguru import logger
 from biotite.structure import AtomArray
 import fastpdb
 import loguru

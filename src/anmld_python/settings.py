@@ -112,6 +112,6 @@ class AppSettings(BaseSettings):
     )
     mode_selection: Literal["MATLAB"] = "MATLAB"
 
-    anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")
-    amber_settings: AmberSettings = Field(AmberSettings(), alias="AMBER")
-    path_settings: PathSettings = Field(PathSettings(), alias="PATHS")
+    anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")   # type: ignore
+    amber_settings: AmberSettings = Field(AmberSettings(), alias="AMBER")   # type: ignore
+    path_settings: PathSettings = Field(PathSettings(), alias="PATHS")      # type: ignore
