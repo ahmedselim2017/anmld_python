@@ -6,12 +6,13 @@ from pydantic import (
     PositiveInt,
     PositiveFloat,
     NewPath,
+    BaseModel
 )
 from pydantic_settings import BaseSettings
 
-class SubprocessSettings(BaseSettings):
+class SubprocessSettings(BaseModel):
     shell: bool = True
-    cwd: Path = Path("out")
+    cwd: Optional[Path] = None
     check: bool = True
     executable: Path = Path("/bin/bash")
 
@@ -98,7 +99,7 @@ class AmberSettings(BaseSettings):
     min_step: PositiveInt = Field(500)
     sim_step: PositiveInt = Field(100)
     forcefield: str = Field("leaprc.protein.ff14SB")
-    cmd_prefix: str = "module load cuda/11.3 && module load amber/22_20240202 &&"
+    cmd_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
 
 
 class ANMLDSettings(BaseSettings):
