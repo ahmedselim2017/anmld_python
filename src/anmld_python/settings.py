@@ -9,6 +9,12 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings
 
+class SubprocessSettings(BaseSettings):
+    shell: bool = True
+    cwd: Path = Path("out")
+    check: bool = True
+    executable: Path = Path("/bin/bash")
+
 class StepPathSettings(BaseSettings):
     step_raw_pdb_format: str                = "STEP_{step}_raw.pdb"
     step_amber_tleap_anm_pdb_format: str    = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
@@ -115,3 +121,4 @@ class AppSettings(BaseSettings):
     anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")   # type: ignore
     amber_settings: AmberSettings = Field(AmberSettings(), alias="AMBER")   # type: ignore
     path_settings: PathSettings = Field(PathSettings(), alias="PATHS")      # type: ignore
+    subprocess_settings: SubprocessSettings = Field(SubprocessSettings(), alias="SUBPROCESS") # type:ignore

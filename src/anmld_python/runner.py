@@ -77,9 +77,7 @@ def run_step(
     cmd_tleap = f"tleap -f {amber_tleap_step_in_path}"
     subprocess.run(
         AS.cmd_prefix + cmd_tleap,
-        shell=True,
-        cwd=PS.out_dir,
-        check=True,
+        **app_settings.subprocess_settings.__dict__,
     )
     amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_tleap)
 
@@ -94,9 +92,7 @@ def run_step(
                     </dev/null""")
     subprocess.run(
         AS.cmd_prefix + cmd_min,
-        shell=True,
-        cwd=PS.out_dir,
-        check=True,
+        **app_settings.subprocess_settings.__dict__,
     )
     amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_min)
 
@@ -112,9 +108,7 @@ def run_step(
                     </dev/null""")
     subprocess.run(
         AS.cmd_prefix + cmd_sim,
-        shell=True,
-        cwd=PS.out_dir,
-        check=True,
+        **app_settings.subprocess_settings.__dict__,
     )
     amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_sim)
 
@@ -138,9 +132,7 @@ def run_step(
     cmd_align = f"cpptraj {PS.out_dir / SP.step_amber_top} {PS.out_dir / SP.step_amber_ptraj_align_in}"
     subprocess.run(
         AS.cmd_prefix + cmd_align,
-        shell=True,
-        cwd=PS.out_dir,
-        check=True,
+        **app_settings.subprocess_settings.__dict__,
     )
     amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_align)
 
@@ -152,10 +144,8 @@ def run_step(
     with open(PS.out_dir / SP.step_ambmask_AA_pdb) as step_ambmask_AA_pdb_f:
         subprocess.run(
             AS.cmd_prefix + cmd_ambmask_AA,
-            shell=True,
-            cwd=PS.out_dir,
             stdout=step_ambmask_AA_pdb_f,
-            check=True,
+            **app_settings.subprocess_settings.__dict__,
         )
         amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_AA)
 
@@ -163,9 +153,7 @@ def run_step(
     with open(PS.out_dir / SP.step_ambmask_AA_pdb) as step_ambmask_CA_pdb_f:
         subprocess.run(
             AS.cmd_prefix + cmd_ambmask_CA,
-            shell=True,
-            cwd=PS.out_dir,
             stdout=step_ambmask_CA_pdb_f,
-            check=True,
+            **app_settings.subprocess_settings.__dict__,
         )
         amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_CA)

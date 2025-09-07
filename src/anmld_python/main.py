@@ -41,9 +41,12 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
 
     AS = app_settings.amber_settings
     PS = app_settings.path_settings
+
     structure_init = structure_init.absolute()
     structure_target = structure_target.absolute()
     PS.out_dir = PS.out_dir.absolute()
+
+    app_settings.subprocess_settings.cwd = PS.out_dir
 
     PS.out_dir.mkdir(parents=True)
     step_logger.trace(f"Created output directory at {PS.out_dir}")
