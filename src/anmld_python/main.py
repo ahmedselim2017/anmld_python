@@ -53,8 +53,12 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
 
     step_logger.add(PS.out_dir / "anmld.log", serialize=True)
 
-    aa_init = sanitize_pdb(structure_init, PS.sanitized_init_pdb_path)
-    aa_target = sanitize_pdb(structure_target, PS.sanitized_target_pdb_path)
+    aa_init = sanitize_pdb(
+        structure_init, PS.out_dir / PS.sanitized_init_pdb_path
+    )
+    aa_target = sanitize_pdb(
+        structure_target, PS.out_dir / PS.sanitized_target_pdb_path
+    )
     resnum: int = np.unique(aa_init.res_id).size
     step_logger.info("Sanitized initial and target structures")
 
@@ -126,9 +130,9 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                 AMBER_tleap_initial_f.write(
                     dedent(f"""\
                     source {AS.forcefield}
-                    x=loadpdb {PS.sanitized_init_pdb_path}
+                    x=loadpdb {PS.out_dir / PS.sanitized_init_pdb_path}
                     saveamberparm x {PS.out_dir / PS.amber_pdb_init_top} {PS.out_dir / PS.amber_pdb_init_coord}
-                    y=loadpdb {PS.sanitized_target_pdb_path}
+                    y=loadpdb {PS.out_dir / PS.sanitized_target_pdb_path}
                     saveamberparm y {PS.out_dir / PS.amber_pdb_target_top} {PS.out_dir / PS.amber_pdb_target_coord}
                     quit""")
                 )
@@ -138,14 +142,12 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                 )
 
             cmd_tleap = f"tleap -f {PS.out_dir / PS.amber_tleap_init_in}"
+            amber_logger.info("Running tleap")
             subprocess.run(
                 AS.cmd_prefix + cmd_tleap,
                 **app_settings.subprocess_settings.__dict__,
             )
-            amber_logger.debug(
-                "Ran {cmd}",
-                cmd=AS.cmd_prefix + cmd_tleap,
-            )
+            amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_tleap)
 
             cmd_amber_initial = dedent(f"""\
                                     $AMBERHOME/bin/pmemd.cuda -O                                    \\
@@ -165,21 +167,21 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                                         -x {PS.out_dir / PS.amber_pdb_target_min_coord} \\
                                         -r {PS.out_dir / PS.amber_pdb_target_min_rst}   \\
                                         </dev/null""")
+            amber_logger.info("Running pmemd min for the initial structure")
             subprocess.run(
                 AS.cmd_prefix + cmd_amber_initial,
                 **app_settings.subprocess_settings.__dict__,
             )
             amber_logger.debug(
-                "Ran {cmd}",
-                cmd=AS.cmd_prefix + cmd_amber_initial,
+                "Ran {cmd}", cmd=AS.cmd_prefix + cmd_amber_initial
             )
+            amber_logger.info("Running pmemd min for the target structure")
             subprocess.run(
                 AS.cmd_prefix + cmd_amber_target,
                 **app_settings.subprocess_settings.__dict__,
             )
             amber_logger.debug(
-                "Ran {cmd}",
-                cmd=AS.cmd_prefix + cmd_amber_target,
+                "Ran {cmd}", cmd=AS.cmd_prefix + cmd_amber_target
             )
 
             # create initial_min.rst (rewrite to be able to read by ambmsk,
@@ -201,14 +203,12 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             cmd_rewrite = dedent(f"""cpptraj                                                \\
                                         {PS.out_dir / PS.amber_pdb_init_top}    \\
                                         {PS.out_dir / PS.amber_ptraj_rewrite_init_in}""")
+            amber_logger.info("Running cpptraj")
             subprocess.run(
                 AS.cmd_prefix + cmd_rewrite,
                 **app_settings.subprocess_settings.__dict__,
             )
-            amber_logger.debug(
-                "Ran {cmd}",
-                cmd=AS.cmd_prefix + cmd_rewrite,
-            )
+            amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_rewrite)
 
             # Create AMBER_target_min_algn.rst
             with open(
@@ -232,6 +232,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             cmd_align = dedent(f"""cpptraj                                  \\
                                     {PS.out_dir / PS.amber_pdb_target_top}  \\
                                     {PS.out_dir / PS.amber_ptraj_align_target2initial_in}""")
+            amber_logger.info("Running cpptraj")
             subprocess.run(
                 AS.cmd_prefix + cmd_align,
                 **app_settings.subprocess_settings.__dict__,
@@ -246,6 +247,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                     ambmask -p {PS.out_dir / PS.amber_pdb_init_top} \\
                         -c {PS.out_dir / PS.amber_pdb_rewrite_init_min_rst}     \\
                         -prnlev 1 -out pdb""")
+            amber_logger.info("Running ambmask (initial AA)")
             with open(PS.out_dir / PS.amber_pdb_initial_min_pdb, "w") as out_f:
                 subprocess.run(
                     AS.cmd_prefix + cmd_AA_init,
@@ -258,6 +260,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             )
 
             cmd_CA_init = cmd_AA_init + " -find @CA"
+            amber_logger.info("Running ambmask (initial CA)")
             with open(
                 PS.out_dir / PS.amber_pdb_initial_min_c_pdb, "w"
             ) as out_f:
@@ -275,6 +278,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                     ambmask -p {PS.out_dir / PS.amber_pdb_target_top}  \\
                         -c {PS.out_dir / PS.amber_target_min_algn} \\
                         -prnlev 1 -out pdb""")
+            amber_logger.info("Running ambmask (target AA)")
             with open(PS.out_dir / PS.amber_pdb_target_min_pdb, "w") as out_f:
                 subprocess.run(
                     AS.cmd_prefix + cmd_AA_target,
@@ -287,6 +291,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             )
 
             cmd_CA_target = cmd_AA_target + " -find @CA"
+            amber_logger.info("Running ambmask (target CA)")
             with open(PS.out_dir / PS.amber_pdb_target_min_c_pdb, "w") as out_f:
                 subprocess.run(
                     AS.cmd_prefix + cmd_CA_target,

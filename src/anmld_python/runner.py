@@ -75,6 +75,7 @@ def run_step(
     amber_logger.trace("Wrote file at {path}", path=amber_tleap_step_in_path)
 
     cmd_tleap = f"tleap -f {amber_tleap_step_in_path}"
+    amber_logger.info("Running tleap")
     subprocess.run(
         AS.cmd_prefix + cmd_tleap,
         **app_settings.subprocess_settings.__dict__,
@@ -90,6 +91,7 @@ def run_step(
                     -x {PS.out_dir / SP.step_amber_min_coord}   \\
                     -r {PS.out_dir / SP.step_amber_min_rst}     \\
                     </dev/null""")
+    amber_logger.info("Running pmemd min")
     subprocess.run(
         AS.cmd_prefix + cmd_min,
         **app_settings.subprocess_settings.__dict__,
@@ -106,6 +108,7 @@ def run_step(
                     -e {PS.out_dir / SP.step_amber_sim_ener}    \\
                     -r {PS.out_dir / SP.step_amber_sim_restart} \\
                     </dev/null""")
+    amber_logger.info("Running pmemd sim")
     subprocess.run(
         AS.cmd_prefix + cmd_sim,
         **app_settings.subprocess_settings.__dict__,
@@ -130,6 +133,7 @@ def run_step(
     )
 
     cmd_align = f"cpptraj {PS.out_dir / SP.step_amber_top} {PS.out_dir / SP.step_amber_ptraj_align_in}"
+    amber_logger.info("Running cpptraj")
     subprocess.run(
         AS.cmd_prefix + cmd_align,
         **app_settings.subprocess_settings.__dict__,
@@ -141,6 +145,7 @@ def run_step(
                     -c {PS.out_dir / SP.step_amber_ptraj_algn_restart}  \\
                     -prnlev 1 -out pdb""")
 
+    amber_logger.info("Running ambmask AA")
     with open(PS.out_dir / SP.step_ambmask_AA_pdb) as step_ambmask_AA_pdb_f:
         subprocess.run(
             AS.cmd_prefix + cmd_ambmask_AA,
@@ -150,6 +155,7 @@ def run_step(
         amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_AA)
 
     cmd_ambmask_CA = cmd_ambmask_AA + " -find @CA"
+    amber_logger.info("Running ambmask CA")
     with open(PS.out_dir / SP.step_ambmask_AA_pdb) as step_ambmask_CA_pdb_f:
         subprocess.run(
             AS.cmd_prefix + cmd_ambmask_CA,
