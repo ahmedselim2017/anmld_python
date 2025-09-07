@@ -140,9 +140,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             cmd_tleap = f"tleap -f {PS.out_dir / PS.amber_tleap_init_in}"
             subprocess.run(
                 AS.cmd_prefix + cmd_tleap,
-                shell=True,
-                cwd=PS.out_dir,
-                check=True,
+                **app_settings.subprocess_settings.__dict__,
             )
             amber_logger.debug(
                 "Ran {cmd}",
@@ -169,9 +167,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                                         </dev/null""")
             subprocess.run(
                 AS.cmd_prefix + cmd_amber_initial,
-                shell=True,
-                cwd=PS.out_dir,
-                check=True,
+                **app_settings.subprocess_settings.__dict__,
             )
             amber_logger.debug(
                 "Ran {cmd}",
@@ -179,9 +175,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             )
             subprocess.run(
                 AS.cmd_prefix + cmd_amber_target,
-                shell=True,
-                cwd=PS.out_dir,
-                check=True,
+                **app_settings.subprocess_settings.__dict__,
             )
             amber_logger.debug(
                 "Ran {cmd}",
@@ -209,9 +203,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                                         {PS.out_dir / PS.amber_ptraj_rewrite_init_in}""")
             subprocess.run(
                 AS.cmd_prefix + cmd_rewrite,
-                shell=True,
-                cwd=PS.out_dir,
-                check=True,
+                **app_settings.subprocess_settings.__dict__,
             )
             amber_logger.debug(
                 "Ran {cmd}",
@@ -242,9 +234,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                                     {PS.out_dir / PS.amber_ptraj_align_target2initial_in}""")
             subprocess.run(
                 AS.cmd_prefix + cmd_align,
-                shell=True,
-                cwd=PS.out_dir,
-                check=True,
+                **app_settings.subprocess_settings.__dict__,
             )
             amber_logger.debug(
                 "Ran {cmd}",
@@ -259,10 +249,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             with open(PS.out_dir / PS.amber_pdb_initial_min_pdb, "w") as out_f:
                 subprocess.run(
                     AS.cmd_prefix + cmd_AA_init,
-                    shell=True,
-                    cwd=PS.out_dir,
                     stdout=out_f,
-                    check=True,
+                    **app_settings.subprocess_settings.__dict__,
                 )
             amber_logger.debug(
                 "Ran {cmd}",
@@ -275,10 +263,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             ) as out_f:
                 subprocess.run(
                     AS.cmd_prefix + cmd_CA_init,
-                    shell=True,
-                    cwd=PS.out_dir,
                     stdout=out_f,
-                    check=True,
+                    **app_settings.subprocess_settings.__dict__,
                 )
             amber_logger.debug(
                 "Ran {cmd}",
@@ -292,10 +278,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             with open(PS.out_dir / PS.amber_pdb_target_min_pdb, "w") as out_f:
                 subprocess.run(
                     AS.cmd_prefix + cmd_AA_target,
-                    shell=True,
-                    cwd=PS.out_dir,
                     stdout=out_f,
-                    check=True,
+                    **app_settings.subprocess_settings.__dict__,
                 )
             amber_logger.debug(
                 "Ran {cmd}",
@@ -306,10 +290,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             with open(PS.out_dir / PS.amber_pdb_target_min_c_pdb, "w") as out_f:
                 subprocess.run(
                     AS.cmd_prefix + cmd_CA_target,
-                    shell=True,
-                    cwd=PS.out_dir,
                     stdout=out_f,
-                    check=True,
+                    **app_settings.subprocess_settings.__dict__,
                 )
             amber_logger.debug(
                 "Ran {cmd}",
