@@ -15,7 +15,7 @@ from anmld_python.tools import sanitize_pdb
 
 
 @logger.catch(reraise=True)
-def main(settings_path: Path):
+def main(settings_path: Path, structure_init: Path, structure_target: Path):
     with open(settings_path, "rb") as settings_f:
         app_settings = AppSettings(**tomllib.load(settings_f))
 
@@ -41,8 +41,8 @@ def main(settings_path: Path):
 
     AS = app_settings.amber_settings
     PS = app_settings.path_settings
-    PS.structure_init = PS.structure_init.absolute()
-    PS.structure_target = PS.structure_target.absolute()
+    structure_init = structure_init.absolute()
+    structure_target = structure_target.absolute()
     PS.out_dir = PS.out_dir.absolute()
 
     PS.out_dir.mkdir(parents=True)
@@ -50,8 +50,8 @@ def main(settings_path: Path):
 
     step_logger.add(PS.out_dir / "anmld.log", serialize=True)
 
-    aa_init = sanitize_pdb(PS.structure_init, PS.sanitized_init_pdb_path)
-    aa_target = sanitize_pdb(PS.structure_target, PS.sanitized_target_pdb_path)
+    aa_init = sanitize_pdb(structure_init, PS.sanitized_init_pdb_path)
+    aa_target = sanitize_pdb(structure_target, PS.sanitized_target_pdb_path)
     resnum: int = np.unique(aa_init.res_id).size
     step_logger.info("Sanitized initial and target structures")
 
@@ -312,6 +312,20 @@ def main(settings_path: Path):
                 "Ran {cmd}",
                 cmd=AS.cmd_prefix + cmd_CA_target,
             )
+
+        if app_settings.mode_selection == "MATLAB":
+            aa_step = aa_init
+        else:
+            raise NotImplementedError()
+
+        run_step(
+            aa_step,
+            aa_target,
+            step,
+            step_logger,
+            amber_logger,
+            app_settings,
+        )
 
 
 if __name__ == "__main__":
