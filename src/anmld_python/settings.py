@@ -12,6 +12,10 @@ from pydantic_settings import BaseSettings
 
 
 class PathSettings(BaseSettings):
+    structure_init: FilePath = Field(alias="initial")
+    structure_target: FilePath = Field(alias="target")
+    out_dir: NewPath = Field(Path("out"))
+
     sanitized_init_pdb_path: Path = Path("sanitized_init.pdb")
     sanitized_target_pdb_path: Path = Path("sanitized_target.pdb")
 
@@ -58,7 +62,7 @@ class AmberSettings(BaseSettings):
     min_step: PositiveInt = Field(500)
     sim_step: PositiveInt = Field(100)
     forcefield: str = Field("leaprc.protein.ff14SB")
-    module_name: str
+    cmd_prefix: str = "module load cuda/11.3 && module load amber/22_20240202 &&"
 
 
 class ANMLDSettings(BaseSettings):
@@ -73,9 +77,6 @@ class ANMLDSettings(BaseSettings):
 
 class AppSettings(BaseSettings):
     run_name: str = Field("anmld_run", alias="name")
-    structure_init: FilePath = Field(alias="initial")
-    structure_target: FilePath = Field(alias="target")
-    out_dir: NewPath = Field(Path("out"))
     logging_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = (
         "INFO"
     )

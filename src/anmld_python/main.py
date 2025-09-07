@@ -17,7 +17,7 @@ from anmld_python.tools import sanitize_pdb
 @logger.catch(reraise=True)
 def main(settings_path: Path):
     with open(settings_path, "rb") as settings_f:
-        AS = AppSettings(**tomllib.load(settings_f))
+        app_settings = AppSettings(**tomllib.load(settings_f))
 
     logger.remove()
     logger_format = (
@@ -39,37 +39,38 @@ def main(settings_path: Path):
     step_logger.info("Starting ANM-LD python.")
     step_logger.info(f"Version: {importlib.metadata.version('anmld_python')}")
 
-    PS = AS.path_settings
-    AS.structure_init = AS.structure_init.absolute()
-    AS.structure_target = AS.structure_target.absolute()
-    AS.out_dir = AS.out_dir.absolute()
+    AS = app_settings.amber_settings
+    PS = app_settings.path_settings
+    PS.structure_init = PS.structure_init.absolute()
+    PS.structure_target = PS.structure_target.absolute()
+    PS.out_dir = PS.out_dir.absolute()
 
-    AS.out_dir.mkdir(parents=True)
-    step_logger.trace(f"Created output directory at {AS.out_dir}")
+    PS.out_dir.mkdir(parents=True)
+    step_logger.trace(f"Created output directory at {PS.out_dir}")
 
-    step_logger.add(AS.out_dir / "anmld.log", serialize=True)
+    step_logger.add(PS.out_dir / "anmld.log", serialize=True)
 
-    cmd_load = f"module load {AS.amber_settings.module_name} && "
-
-    aa_init = sanitize_pdb(AS.structure_init, PS.sanitized_init_pdb_path)
-    aa_target = sanitize_pdb(AS.structure_target, PS.sanitized_target_pdb_path)
+    aa_init = sanitize_pdb(PS.structure_init, PS.sanitized_init_pdb_path)
+    aa_target = sanitize_pdb(PS.structure_target, PS.sanitized_target_pdb_path)
     resnum: int = np.unique(aa_init.res_id).size
     step_logger.info("Sanitized initial and target structures")
 
-    for step in tqdm(range(AS.anmld_settings.n_steps), desc="Running ANM-LD"):
+    for step in tqdm(
+        range(app_settings.anmld_settings.n_steps), desc="Running ANM-LD"
+    ):
         step_logger = logger.bind(step=step)
         amber_logger = step_logger.bind(isAMBER=True)
 
         step_logger.info("Starting step")
 
         if step == 0:
-            with open(AS.out_dir / PS.amber_min_in, "w") as AMBER_min_in_f:
+            with open(PS.out_dir / PS.amber_min_in, "w") as AMBER_min_in_f:
                 AMBER_min_in_f.write(
                     dedent(f"""\
-                    {AS.run_name} minimization, implicit solvent
+                    {app_settings.run_name} minimization, implicit solvent
                      &cntrl
                       imin = 1,
-                      maxcyc = {AS.amber_settings.min_step},
+                      maxcyc = {AS.min_step},
                       ncyc = 50,
                       ntmin = 1,
                       drms = 0.01,
@@ -80,13 +81,14 @@ def main(settings_path: Path):
                      &end""")
                 )
                 amber_logger.trace(
-                    "Wrote file at {path}", path=AS.out_dir / PS.amber_min_in
+                    "Wrote file at {path}",
+                    path=PS.out_dir / PS.amber_min_in,
                 )
 
-            with open(AS.out_dir / PS.amber_sim_in, "w") as AMBER_sim_in_f:
+            with open(PS.out_dir / PS.amber_sim_in, "w") as AMBER_sim_in_f:
                 AMBER_sim_in_f.write(
                     dedent(f"""\
-                    {AS.run_name} targeted Langevin dynamics simulation
+                    {app_settings.run_name} targeted Langevin dynamics simulation
                      &cntrl
                       imin = 0,
                       irest = 0,
@@ -94,9 +96,9 @@ def main(settings_path: Path):
                       ntt = 3,
                       gamma_ln = 5.0,
                       ig = -1,
-                      tempi = {AS.amber_settings.temp},
-                      temp0 = {AS.amber_settings.temp},
-                      nstlim = {AS.amber_settings.sim_step},
+                      tempi = {AS.temp},
+                      temp0 = {AS.temp},
+                      nstlim = {AS.sim_step},
                       dt = 0.002,
                       ntc = 2,
                       ntf = 2,
@@ -111,178 +113,205 @@ def main(settings_path: Path):
                      &end""")
                 )
                 amber_logger.trace(
-                    "Wrote file at {path}", path=AS.out_dir / PS.amber_sim_in
+                    "Wrote file at {path}",
+                    path=PS.out_dir / PS.amber_sim_in,
                 )
 
             with open(
-                AS.out_dir / PS.amber_tleap_init_in, "w"
+                PS.out_dir / PS.amber_tleap_init_in, "w"
             ) as AMBER_tleap_initial_f:
                 AMBER_tleap_initial_f.write(
                     dedent(f"""\
-                    source {AS.amber_settings.forcefield}
+                    source {AS.forcefield}
                     x=loadpdb {PS.sanitized_init_pdb_path}
-                    saveamberparm x {AS.out_dir / PS.amber_pdb_init_top} {AS.out_dir / PS.amber_pdb_init_coord}
+                    saveamberparm x {PS.out_dir / PS.amber_pdb_init_top} {PS.out_dir / PS.amber_pdb_init_coord}
                     y=loadpdb {PS.sanitized_target_pdb_path}
-                    saveamberparm y {AS.out_dir / PS.amber_pdb_target_top} {AS.out_dir / PS.amber_pdb_target_coord}
+                    saveamberparm y {PS.out_dir / PS.amber_pdb_target_top} {PS.out_dir / PS.amber_pdb_target_coord}
                     quit""")
                 )
                 amber_logger.trace(
                     "Wrote file at {path}",
-                    path=AS.out_dir / PS.amber_tleap_init_in,
+                    path=PS.out_dir / PS.amber_tleap_init_in,
                 )
 
-            cmd_tleap = f"tleap -f {AS.out_dir / PS.amber_tleap_init_in}"
+            cmd_tleap = f"tleap -f {PS.out_dir / PS.amber_tleap_init_in}"
             subprocess.run(
-                cmd_load + cmd_tleap,
+                AS.cmd_prefix + cmd_tleap,
                 shell=True,
-                cwd=AS.out_dir,
+                cwd=PS.out_dir,
                 check=True,
             )
-            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_tleap)
+            amber_logger.debug(
+                "Ran {cmd}",
+                cmd=AS.cmd_prefix + cmd_tleap,
+            )
 
             cmd_amber_initial = dedent(f"""\
                                     $AMBERHOME/bin/pmemd.cuda -O                                    \\
-                                        -i {AS.out_dir / PS.amber_min_in}               \\
-                                        -p {AS.out_dir / PS.amber_pdb_init_top}         \\
-                                        -c {AS.out_dir / PS.amber_pdb_init_coord}       \\
-                                        -o {AS.out_dir / PS.amber_pdb_init_min_out}     \\
-                                        -x {AS.out_dir / PS.amber_pdb_init_min_coord}   \\
-                                        -r {AS.out_dir / PS.amber_pdb_init_min_rst}     \\
+                                        -i {PS.out_dir / PS.amber_min_in}               \\
+                                        -p {PS.out_dir / PS.amber_pdb_init_top}         \\
+                                        -c {PS.out_dir / PS.amber_pdb_init_coord}       \\
+                                        -o {PS.out_dir / PS.amber_pdb_init_min_out}     \\
+                                        -x {PS.out_dir / PS.amber_pdb_init_min_coord}   \\
+                                        -r {PS.out_dir / PS.amber_pdb_init_min_rst}     \\
                                         </dev/null""")
             cmd_amber_target = dedent(f"""\
                                     $AMBERHOME/bin/pmemd.cuda -O                                    \\
-                                        -i {AS.out_dir / PS.amber_min_in}               \\
-                                        -p {AS.out_dir / PS.amber_pdb_target_top}       \\
-                                        -c {AS.out_dir / PS.amber_pdb_target_coord}     \\
-                                        -o {AS.out_dir / PS.amber_pdb_target_min_out}   \\
-                                        -x {AS.out_dir / PS.amber_pdb_target_min_coord} \\
-                                        -r {AS.out_dir / PS.amber_pdb_target_min_rst}   \\
+                                        -i {PS.out_dir / PS.amber_min_in}               \\
+                                        -p {PS.out_dir / PS.amber_pdb_target_top}       \\
+                                        -c {PS.out_dir / PS.amber_pdb_target_coord}     \\
+                                        -o {PS.out_dir / PS.amber_pdb_target_min_out}   \\
+                                        -x {PS.out_dir / PS.amber_pdb_target_min_coord} \\
+                                        -r {PS.out_dir / PS.amber_pdb_target_min_rst}   \\
                                         </dev/null""")
             subprocess.run(
-                cmd_load + cmd_amber_initial,
+                AS.cmd_prefix + cmd_amber_initial,
                 shell=True,
-                cwd=AS.out_dir,
+                cwd=PS.out_dir,
                 check=True,
             )
-            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_amber_initial)
+            amber_logger.debug(
+                "Ran {cmd}",
+                cmd=AS.cmd_prefix + cmd_amber_initial,
+            )
             subprocess.run(
-                cmd_load + cmd_amber_target,
+                AS.cmd_prefix + cmd_amber_target,
                 shell=True,
-                cwd=AS.out_dir,
+                cwd=PS.out_dir,
                 check=True,
             )
-            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_amber_target)
+            amber_logger.debug(
+                "Ran {cmd}",
+                cmd=AS.cmd_prefix + cmd_amber_target,
+            )
 
             # create initial_min.rst (rewrite to be able to read by ambmsk,
             # version problem)
             with open(
-                AS.out_dir / PS.amber_ptraj_rewrite_init_in,
+                PS.out_dir / PS.amber_ptraj_rewrite_init_in,
                 "w",
             ) as amber_ptraj_rewrite_initial_f:
                 amber_ptraj_rewrite_initial_f.write(
                     dedent(f"""\
-                            trajin {AS.out_dir / PS.amber_pdb_init_min_rst}
-                            trajout {AS.out_dir / PS.amber_pdb_rewrite_init_min_rst} restart""")
+                            trajin {PS.out_dir / PS.amber_pdb_init_min_rst}
+                            trajout {PS.out_dir / PS.amber_pdb_rewrite_init_min_rst} restart""")
                 )
                 amber_logger.trace(
                     "Wrote file at {path}",
-                    path=AS.out_dir / PS.amber_ptraj_rewrite_init_in,
+                    path=PS.out_dir / PS.amber_ptraj_rewrite_init_in,
                 )
 
             cmd_rewrite = dedent(f"""cpptraj                                                \\
-                                        {AS.out_dir / PS.amber_pdb_init_top}    \\
-                                        {AS.out_dir / PS.amber_ptraj_rewrite_init_in}""")
+                                        {PS.out_dir / PS.amber_pdb_init_top}    \\
+                                        {PS.out_dir / PS.amber_ptraj_rewrite_init_in}""")
             subprocess.run(
-                cmd_load + cmd_rewrite,
+                AS.cmd_prefix + cmd_rewrite,
                 shell=True,
-                cwd=AS.out_dir,
+                cwd=PS.out_dir,
                 check=True,
             )
-            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_rewrite)
+            amber_logger.debug(
+                "Ran {cmd}",
+                cmd=AS.cmd_prefix + cmd_rewrite,
+            )
 
             # Create AMBER_target_min_algn.rst
             with open(
-                AS.out_dir / PS.amber_ptraj_align_target2initial_in,
+                PS.out_dir / PS.amber_ptraj_align_target2initial_in,
                 "w",
             ) as amber_ptraj_align_target2initial_f:
                 amber_ptraj_align_target2initial_f.write(
                     dedent(f"""\
-                            parm {AS.out_dir / PS.amber_pdb_init_top} [initial-top]
-                            parm {AS.out_dir / PS.amber_pdb_target_top} [target-top]
-                            trajin {AS.out_dir / PS.amber_pdb_target_min_rst} parm [target-top]
-                            reference {AS.out_dir / PS.amber_pdb_init_min_rst} parm [initial-top] [initial-ref]
-                            rms ref [initial-ref]  :1-{resnum}@CA out {AS.out_dir / PS.amber_rms_target_align_dat} 
-                            trajout {AS.out_dir / PS.amber_target_min_algn} restart parm [target-top]""")  # TODO: RESNUM
+                            parm {PS.out_dir / PS.amber_pdb_init_top} [initial-top]
+                            parm {PS.out_dir / PS.amber_pdb_target_top} [target-top]
+                            trajin {PS.out_dir / PS.amber_pdb_target_min_rst} parm [target-top]
+                            reference {PS.out_dir / PS.amber_pdb_init_min_rst} parm [initial-top] [initial-ref]
+                            rms ref [initial-ref]  :1-{resnum}@CA out {PS.out_dir / PS.amber_rms_target_align_dat} 
+                            trajout {PS.out_dir / PS.amber_target_min_algn} restart parm [target-top]""")  # TODO: RESNUM
                 )
                 amber_logger.trace(
                     "Wrote file at {path}",
-                    path=AS.out_dir / PS.amber_ptraj_align_target2initial_in,
+                    path=PS.out_dir / PS.amber_ptraj_align_target2initial_in,
                 )
 
             cmd_align = dedent(f"""cpptraj                                  \\
-                                    {AS.out_dir / PS.amber_pdb_target_top}  \\
-                                    {AS.out_dir / PS.amber_ptraj_align_target2initial_in}""")
+                                    {PS.out_dir / PS.amber_pdb_target_top}  \\
+                                    {PS.out_dir / PS.amber_ptraj_align_target2initial_in}""")
             subprocess.run(
-                cmd_load + cmd_align,
+                AS.cmd_prefix + cmd_align,
                 shell=True,
-                cwd=AS.out_dir,
+                cwd=PS.out_dir,
                 check=True,
             )
-            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_align)
+            amber_logger.debug(
+                "Ran {cmd}",
+                cmd=AS.cmd_prefix + cmd_align,
+            )
 
             # create initial all-atom and alpha C pdbs
             cmd_AA_init = dedent(f"""\
-                    ambmask -p {AS.out_dir / PS.amber_pdb_init_top} \\
-                        -c {AS.out_dir / PS.amber_pdb_rewrite_init_min_rst}     \\
+                    ambmask -p {PS.out_dir / PS.amber_pdb_init_top} \\
+                        -c {PS.out_dir / PS.amber_pdb_rewrite_init_min_rst}     \\
                         -prnlev 1 -out pdb""")
-            with open(AS.out_dir / PS.amber_pdb_initial_min_pdb, "w") as out_f:
+            with open(PS.out_dir / PS.amber_pdb_initial_min_pdb, "w") as out_f:
                 subprocess.run(
-                    cmd_load + cmd_AA_init,
+                    AS.cmd_prefix + cmd_AA_init,
                     shell=True,
-                    cwd=AS.out_dir,
+                    cwd=PS.out_dir,
                     stdout=out_f,
                     check=True,
                 )
-            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_AA_init)
+            amber_logger.debug(
+                "Ran {cmd}",
+                cmd=AS.cmd_prefix + cmd_AA_init,
+            )
 
             cmd_CA_init = cmd_AA_init + " -find @CA"
             with open(
-                AS.out_dir / PS.amber_pdb_initial_min_c_pdb, "w"
+                PS.out_dir / PS.amber_pdb_initial_min_c_pdb, "w"
             ) as out_f:
                 subprocess.run(
-                    cmd_load + cmd_CA_init,
+                    AS.cmd_prefix + cmd_CA_init,
                     shell=True,
-                    cwd=AS.out_dir,
+                    cwd=PS.out_dir,
                     stdout=out_f,
                     check=True,
                 )
-            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_CA_init)
+            amber_logger.debug(
+                "Ran {cmd}",
+                cmd=AS.cmd_prefix + cmd_CA_init,
+            )
 
             cmd_AA_target = dedent(f"""\
-                    ambmask -p {AS.out_dir / PS.amber_pdb_target_top}  \\
-                        -c {AS.out_dir / PS.amber_target_min_algn} \\
+                    ambmask -p {PS.out_dir / PS.amber_pdb_target_top}  \\
+                        -c {PS.out_dir / PS.amber_target_min_algn} \\
                         -prnlev 1 -out pdb""")
-            with open(AS.out_dir / PS.amber_pdb_target_min_pdb, "w") as out_f:
+            with open(PS.out_dir / PS.amber_pdb_target_min_pdb, "w") as out_f:
                 subprocess.run(
-                    cmd_load + cmd_AA_target,
+                    AS.cmd_prefix + cmd_AA_target,
                     shell=True,
-                    cwd=AS.out_dir,
+                    cwd=PS.out_dir,
                     stdout=out_f,
                     check=True,
                 )
-            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_AA_target)
+            amber_logger.debug(
+                "Ran {cmd}",
+                cmd=AS.cmd_prefix + cmd_AA_target,
+            )
 
             cmd_CA_target = cmd_AA_target + " -find @CA"
-            with open(AS.out_dir / PS.amber_pdb_target_min_c_pdb, "w") as out_f:
+            with open(PS.out_dir / PS.amber_pdb_target_min_c_pdb, "w") as out_f:
                 subprocess.run(
-                    cmd_load + cmd_CA_target,
+                    AS.cmd_prefix + cmd_CA_target,
                     shell=True,
-                    cwd=AS.out_dir,
+                    cwd=PS.out_dir,
                     stdout=out_f,
                     check=True,
                 )
-            amber_logger.debug("Ran {cmd}", cmd=cmd_load + cmd_CA_target)
-
+            amber_logger.debug(
+                "Ran {cmd}",
+                cmd=AS.cmd_prefix + cmd_CA_target,
+            )
 
 
 if __name__ == "__main__":
