@@ -76,11 +76,11 @@ def run_step(
 
     cmd_tleap = f"tleap -f {amber_tleap_step_in_path}"
     amber_logger.info("Running tleap")
+    amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_tleap)
     subprocess.run(
         AS.cmd_prefix + cmd_tleap,
         **app_settings.subprocess_settings.__dict__,
     )
-    amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_tleap)
 
     cmd_min = dedent(f"""\
                 $AMBERHOME/bin/pmemd.cuda -O                    \\
@@ -92,11 +92,11 @@ def run_step(
                     -r {PS.out_dir / SP.step_amber_min_rst}     \\
                     </dev/null""")
     amber_logger.info("Running pmemd min")
+    amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_min)
     subprocess.run(
         AS.cmd_prefix + cmd_min,
         **app_settings.subprocess_settings.__dict__,
     )
-    amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_min)
 
     cmd_sim = dedent(f"""\
                 $AMBERHOME/bin/pmemd.cuda -O                    \\
@@ -109,11 +109,11 @@ def run_step(
                     -r {PS.out_dir / SP.step_amber_sim_restart} \\
                     </dev/null""")
     amber_logger.info("Running pmemd sim")
+    amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_sim)
     subprocess.run(
         AS.cmd_prefix + cmd_sim,
         **app_settings.subprocess_settings.__dict__,
     )
-    amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_sim)
 
     with open(
         PS.out_dir / SP.step_amber_ptraj_align_in
@@ -134,11 +134,11 @@ def run_step(
 
     cmd_align = f"cpptraj {PS.out_dir / SP.step_amber_top} {PS.out_dir / SP.step_amber_ptraj_align_in}"
     amber_logger.info("Running cpptraj")
+    amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_align)
     subprocess.run(
         AS.cmd_prefix + cmd_align,
         **app_settings.subprocess_settings.__dict__,
     )
-    amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_align)
 
     cmd_ambmask_AA = dedent(f"""\
             ambmask -p {PS.out_dir / SP.step_amber_top}                 \\
@@ -146,20 +146,20 @@ def run_step(
                     -prnlev 1 -out pdb""")
 
     amber_logger.info("Running ambmask AA")
+    amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_AA)
     with open(PS.out_dir / SP.step_ambmask_AA_pdb) as step_ambmask_AA_pdb_f:
         subprocess.run(
             AS.cmd_prefix + cmd_ambmask_AA,
             stdout=step_ambmask_AA_pdb_f,
             **app_settings.subprocess_settings.__dict__,
         )
-        amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_AA)
 
     cmd_ambmask_CA = cmd_ambmask_AA + " -find @CA"
     amber_logger.info("Running ambmask CA")
+    amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_CA)
     with open(PS.out_dir / SP.step_ambmask_AA_pdb) as step_ambmask_CA_pdb_f:
         subprocess.run(
             AS.cmd_prefix + cmd_ambmask_CA,
             stdout=step_ambmask_CA_pdb_f,
             **app_settings.subprocess_settings.__dict__,
         )
-        amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_CA)

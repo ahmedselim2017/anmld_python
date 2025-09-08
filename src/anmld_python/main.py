@@ -143,14 +143,14 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
 
             cmd_tleap = f"tleap -f {PS.out_dir / PS.amber_tleap_init_in}"
             amber_logger.info("Running tleap")
+            amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_tleap)
             subprocess.run(
                 AS.cmd_prefix + cmd_tleap,
                 **app_settings.subprocess_settings.__dict__,
             )
-            amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_tleap)
 
             cmd_amber_initial = dedent(f"""\
-                                    $AMBERHOME/bin/pmemd.cuda -O                                    \\
+                                    $AMBERHOME/bin/pmemd.cuda -O                        \\
                                         -i {PS.out_dir / PS.amber_min_in}               \\
                                         -p {PS.out_dir / PS.amber_pdb_init_top}         \\
                                         -c {PS.out_dir / PS.amber_pdb_init_coord}       \\
@@ -159,7 +159,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                                         -r {PS.out_dir / PS.amber_pdb_init_min_rst}     \\
                                         </dev/null""")
             cmd_amber_target = dedent(f"""\
-                                    $AMBERHOME/bin/pmemd.cuda -O                                    \\
+                                    $AMBERHOME/bin/pmemd.cuda -O                        \\
                                         -i {PS.out_dir / PS.amber_min_in}               \\
                                         -p {PS.out_dir / PS.amber_pdb_target_top}       \\
                                         -c {PS.out_dir / PS.amber_pdb_target_coord}     \\
@@ -168,20 +168,21 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                                         -r {PS.out_dir / PS.amber_pdb_target_min_rst}   \\
                                         </dev/null""")
             amber_logger.info("Running pmemd min for the initial structure")
+            amber_logger.debug(
+                "Running {cmd}", cmd=AS.cmd_prefix + cmd_amber_initial
+            )
             subprocess.run(
                 AS.cmd_prefix + cmd_amber_initial,
                 **app_settings.subprocess_settings.__dict__,
             )
-            amber_logger.debug(
-                "Ran {cmd}", cmd=AS.cmd_prefix + cmd_amber_initial
-            )
+
             amber_logger.info("Running pmemd min for the target structure")
+            amber_logger.debug(
+                "Running {cmd}", cmd=AS.cmd_prefix + cmd_amber_target
+            )
             subprocess.run(
                 AS.cmd_prefix + cmd_amber_target,
                 **app_settings.subprocess_settings.__dict__,
-            )
-            amber_logger.debug(
-                "Ran {cmd}", cmd=AS.cmd_prefix + cmd_amber_target
             )
 
             # create initial_min.rst (rewrite to be able to read by ambmsk,
@@ -204,11 +205,11 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                                         {PS.out_dir / PS.amber_pdb_init_top}    \\
                                         {PS.out_dir / PS.amber_ptraj_rewrite_init_in}""")
             amber_logger.info("Running cpptraj")
+            amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_rewrite)
             subprocess.run(
                 AS.cmd_prefix + cmd_rewrite,
                 **app_settings.subprocess_settings.__dict__,
             )
-            amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_rewrite)
 
             # Create AMBER_target_min_algn.rst
             with open(
@@ -233,13 +234,10 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                                     {PS.out_dir / PS.amber_pdb_target_top}  \\
                                     {PS.out_dir / PS.amber_ptraj_align_target2initial_in}""")
             amber_logger.info("Running cpptraj")
+            amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_align)
             subprocess.run(
                 AS.cmd_prefix + cmd_align,
                 **app_settings.subprocess_settings.__dict__,
-            )
-            amber_logger.debug(
-                "Ran {cmd}",
-                cmd=AS.cmd_prefix + cmd_align,
             )
 
             # create initial all-atom and alpha C pdbs
@@ -248,19 +246,17 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                         -c {PS.out_dir / PS.amber_pdb_rewrite_init_min_rst}     \\
                         -prnlev 1 -out pdb""")
             amber_logger.info("Running ambmask (initial AA)")
+            amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_AA_init)
             with open(PS.out_dir / PS.amber_pdb_initial_min_pdb, "w") as out_f:
                 subprocess.run(
                     AS.cmd_prefix + cmd_AA_init,
                     stdout=out_f,
                     **app_settings.subprocess_settings.__dict__,
                 )
-            amber_logger.debug(
-                "Ran {cmd}",
-                cmd=AS.cmd_prefix + cmd_AA_init,
-            )
 
             cmd_CA_init = cmd_AA_init + " -find @CA"
             amber_logger.info("Running ambmask (initial CA)")
+            amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_CA_init)
             with open(
                 PS.out_dir / PS.amber_pdb_initial_min_c_pdb, "w"
             ) as out_f:
@@ -269,39 +265,31 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                     stdout=out_f,
                     **app_settings.subprocess_settings.__dict__,
                 )
-            amber_logger.debug(
-                "Ran {cmd}",
-                cmd=AS.cmd_prefix + cmd_CA_init,
-            )
 
             cmd_AA_target = dedent(f"""\
                     ambmask -p {PS.out_dir / PS.amber_pdb_target_top}  \\
                         -c {PS.out_dir / PS.amber_target_min_algn} \\
                         -prnlev 1 -out pdb""")
             amber_logger.info("Running ambmask (target AA)")
+            amber_logger.debug(
+                "Running {cmd}", cmd=AS.cmd_prefix + cmd_AA_target
+            )
             with open(PS.out_dir / PS.amber_pdb_target_min_pdb, "w") as out_f:
                 subprocess.run(
                     AS.cmd_prefix + cmd_AA_target,
                     stdout=out_f,
                     **app_settings.subprocess_settings.__dict__,
                 )
-            amber_logger.debug(
-                "Ran {cmd}",
-                cmd=AS.cmd_prefix + cmd_AA_target,
-            )
 
             cmd_CA_target = cmd_AA_target + " -find @CA"
             amber_logger.info("Running ambmask (target CA)")
+            amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_CA_target)
             with open(PS.out_dir / PS.amber_pdb_target_min_c_pdb, "w") as out_f:
                 subprocess.run(
                     AS.cmd_prefix + cmd_CA_target,
                     stdout=out_f,
                     **app_settings.subprocess_settings.__dict__,
                 )
-            amber_logger.debug(
-                "Ran {cmd}",
-                cmd=AS.cmd_prefix + cmd_CA_target,
-            )
 
         if app_settings.mode_selection == "MATLAB":
             aa_step = aa_init
