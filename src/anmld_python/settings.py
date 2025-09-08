@@ -43,13 +43,17 @@ class StepPathSettings(BaseSettings):
 
     @classmethod
     def format_step(cls, step: int):
-        # NOTE: A better way?
-        f_dict = {}
-        for key in cls.__dict__:
-            if isinstance(f_dict[key], str):
-                f_dict[key] = cls.__dict__[key].format(step)
+        f_annot = {}
+        for key in cls.__annotations__:
+            if not hasattr(cls, key):
+                continue
 
-        return StepPathSettings(**f_dict)
+            if isinstance(getattr(cls, key), str):
+                f_annot[key] = getattr(cls, key).format(step)
+            else:
+                f_annot[key] = getattr(cls, key)
+
+        return StepPathSettings(**f_annot)
 
 
 class PathSettings(BaseSettings):
