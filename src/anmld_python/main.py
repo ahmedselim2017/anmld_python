@@ -85,7 +85,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                       ntb = 0,
                       saltcon = 0.1,
                       igb = 1,
-                     &end""")
+                     &end
+                           """)
                 )
                 amber_logger.trace(
                     "Wrote file at {path}",
@@ -117,7 +118,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                       saltcon = 0.1,
                       ntb = 0,
                       cut = 1000.0,
-                     &end""")
+                     &end
+                           """)
                 )
                 amber_logger.trace(
                     "Wrote file at {path}",
@@ -134,7 +136,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                     saveamberparm x {PS.out_dir / PS.amber_pdb_init_top} {PS.out_dir / PS.amber_pdb_init_coord}
                     y=loadpdb {PS.out_dir / PS.sanitized_target_pdb_path}
                     saveamberparm y {PS.out_dir / PS.amber_pdb_target_top} {PS.out_dir / PS.amber_pdb_target_coord}
-                    quit""")
+                    quit
+                           """)
                 )
                 amber_logger.trace(
                     "Wrote file at {path}",
@@ -194,7 +197,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                 amber_ptraj_rewrite_initial_f.write(
                     dedent(f"""\
                             trajin {PS.out_dir / PS.amber_pdb_init_min_rst}
-                            trajout {PS.out_dir / PS.amber_pdb_rewrite_init_min_rst} restart""")
+                            trajout {PS.out_dir / PS.amber_pdb_rewrite_init_min_rst} restart
+                           """)
                 )
                 amber_logger.trace(
                     "Wrote file at {path}",
@@ -223,7 +227,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                             trajin {PS.out_dir / PS.amber_pdb_target_min_rst} parm [target-top]
                             reference {PS.out_dir / PS.amber_pdb_init_min_rst} parm [initial-top] [initial-ref]
                             rms ref [initial-ref]  :1-{resnum}@CA out {PS.out_dir / PS.amber_rms_target_align_dat} 
-                            trajout {PS.out_dir / PS.amber_target_min_algn} restart parm [target-top]""")  # TODO: RESNUM
+                            trajout {PS.out_dir / PS.amber_target_min_algn} restart parm [target-top]
+                           """)
                 )
                 amber_logger.trace(
                     "Wrote file at {path}",

@@ -70,7 +70,8 @@ def run_step(
                 source {AS.forcefield}
                 x=loadpdb {pred_path}
                 saveamberparm x {PS.out_dir / SP.step_amber_coord}
-                quit""")
+                quit
+                   """)
         )
     amber_logger.trace("Wrote file at {path}", path=amber_tleap_step_in_path)
 
@@ -126,7 +127,7 @@ def run_step(
                 reference {PS.out_dir / PS.amber_target_min_algn} [target-top] [target-ref]
                 rms ref [target-ref] :1-%d@CA out {PS.out_dir / SP.step_amber_ptraj_rms_align_dat}
                 trajout {PS.out_dir / SP.step_amber_ptraj_algn_restart} restart parm [initial-top]
-            """)
+                   """)
         )
     amber_logger.trace(
         "Wrote file at {path}", path=PS.out_dir / SP.step_amber_ptraj_align_in
