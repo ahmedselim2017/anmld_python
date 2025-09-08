@@ -5,6 +5,7 @@ import subprocess
 from biotite.structure import AtomArray
 import fastpdb
 import loguru
+import numpy as np
 
 from anmld_python.settings import AppSettings
 import anmld_python.anm as ANM
@@ -69,7 +70,7 @@ def run_step(
             dedent(f"""\
                 source {AS.forcefield}
                 x=loadpdb {pred_path}
-                saveamberparm x {PS.out_dir / SP.step_amber_coord}
+                saveamberparm x {PS.out_dir / SP.step_amber_top} {PS.out_dir / SP.step_amber_coord}
                 quit
                    """)
         )
@@ -116,6 +117,7 @@ def run_step(
         **app_settings.subprocess_settings.__dict__,
     )
 
+    resnum: int = np.unique(aa_init.res_id).size
     with open(
         PS.out_dir / SP.step_amber_ptraj_align_in, "w"
     ) as step_amber_ptraj_align_in_file:
@@ -124,8 +126,8 @@ def run_step(
                 parm {PS.out_dir / SP.step_amber_top} [initial-top]
                 parm {PS.out_dir / PS.amber_pdb_target_top} [target-top]
                 trajin {PS.out_dir / SP.step_amber_sim_restart} parm [initial-top]
-                reference {PS.out_dir / PS.amber_target_min_algn} [target-top] [target-ref]
-                rms ref [target-ref] :1-%d@CA out {PS.out_dir / SP.step_amber_ptraj_rms_align_dat}
+                reference {PS.out_dir / PS.amber_target_min_algn} parm [target-top] [target-ref]
+                rms ref [target-ref] :1-{resnum}@CA out {PS.out_dir / SP.step_amber_ptraj_rms_align_dat}
                 trajout {PS.out_dir / SP.step_amber_ptraj_algn_restart} restart parm [initial-top]
                    """)
         )
