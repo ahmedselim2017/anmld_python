@@ -17,8 +17,8 @@ class SubprocessSettings(BaseModel):
     executable: Path = Path("/bin/bash")
 
 class StepPathSettings(BaseSettings):
-    step_raw_pdb_format: str                = "STEP_{step}_raw.pdb"
-    step_amber_tleap_anm_pdb_format: str    = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
+    step_raw_pdb: str                = "STEP_{step}_raw.pdb"
+    step_amber_tleap_anm_pdb: str    = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
 
     step_amber_top: str     = "STEP_{step}_AMBER_raw.top"
     step_amber_coord: str   = "STEP_{step}_AMBER_raw.coord"

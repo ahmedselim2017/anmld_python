@@ -55,16 +55,16 @@ def run_step(
                 app_settings=app_settings,
             )
 
-    pred_path = PS.out_dir / SP.step_raw_pdb_format
+    pred_path = PS.out_dir / SP.step_raw_pdb
 
     pred_file = fastpdb.PDBFile()
     pred_file.set_structure(pred_aa)
     pred_file.write(pred_path)
     step_logger.info(f"Wrote raw step coordinates to {pred_path}")
 
-    amber_tleap_step_in_path = PS.out_dir / SP.step_amber_tleap_anm_pdb_format
+    amber_tleap_step_in_path = PS.out_dir / SP.step_amber_tleap_anm_pdb
 
-    with open(amber_tleap_step_in_path) as amber_tleap_step_in_f:
+    with open(amber_tleap_step_in_path, "w") as amber_tleap_step_in_f:
         amber_tleap_step_in_f.write(
             dedent(f"""\
                 source {AS.forcefield}
@@ -117,7 +117,7 @@ def run_step(
     )
 
     with open(
-        PS.out_dir / SP.step_amber_ptraj_align_in
+        PS.out_dir / SP.step_amber_ptraj_align_in, "w"
     ) as step_amber_ptraj_align_in_file:
         step_amber_ptraj_align_in_file.write(
             dedent(f"""\
@@ -148,7 +148,7 @@ def run_step(
 
     amber_logger.info("Running ambmask AA")
     amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_AA)
-    with open(PS.out_dir / SP.step_ambmask_AA_pdb) as step_ambmask_AA_pdb_f:
+    with open(PS.out_dir / SP.step_ambmask_AA_pdb, "w") as step_ambmask_AA_pdb_f:
         subprocess.run(
             AS.cmd_prefix + cmd_ambmask_AA,
             stdout=step_ambmask_AA_pdb_f,
@@ -158,7 +158,7 @@ def run_step(
     cmd_ambmask_CA = cmd_ambmask_AA + " -find @CA"
     amber_logger.info("Running ambmask CA")
     amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_CA)
-    with open(PS.out_dir / SP.step_ambmask_AA_pdb) as step_ambmask_CA_pdb_f:
+    with open(PS.out_dir / SP.step_ambmask_AA_pdb, "w") as step_ambmask_CA_pdb_f:
         subprocess.run(
             AS.cmd_prefix + cmd_ambmask_CA,
             stdout=step_ambmask_CA_pdb_f,
