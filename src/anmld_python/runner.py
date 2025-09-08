@@ -24,8 +24,8 @@ def run_step(
 
     ca_init = aa_init[(aa_init.atom_name == "CA") & (aa_init.element == "C")]
     hessian_init = ANM.build_hessian(
-        coords=ca_init,
-        cutoff=AppSettings.anmld_settings.rcut_ANM,
+        coords=ca_init.coord,
+        cutoff=app_settings.anmld_settings.rcut_ANM,
         gamma=app_settings.anmld_settings.gamma_ANM,
     )
     step_logger.debug("Calculated the Hessian matrix")

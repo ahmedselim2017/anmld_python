@@ -41,17 +41,13 @@ class StepPathSettings(BaseSettings):
     step_ambmask_CA_pdb: str = "STEP_{step}_ambmask_CA.pdb"
 
 
-    @classmethod
-    def format_step(cls, step: int):
+    def format_step(self, step: int):
+        dump = self.model_dump()
         f_annot = {}
-        for key in cls.__annotations__:
-            if not hasattr(cls, key):
-                continue
-
-            if isinstance(getattr(cls, key), str):
-                f_annot[key] = getattr(cls, key).format(step)
-            else:
-                f_annot[key] = getattr(cls, key)
+        for key in dump:
+            f_annot[key] = getattr(self, key)
+            if isinstance(getattr(self, key), str):
+                f_annot[key] = getattr(self, key).format(step=step)
 
         return StepPathSettings(**f_annot)
 

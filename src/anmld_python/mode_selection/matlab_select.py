@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import cast
 
 from biotite.structure import AtomArray
@@ -17,7 +18,7 @@ def matlab_select(
     Vy_init: jax.Array,
     Vz_init: jax.Array,
 ) -> tuple[jax.Array, jax.Array]:
-    N_nodes = ca_coords_init.shape[0]
+    N_nodes, N_modes = Vx_init.shape
 
     # (N_nodes, 3)
     diff_vector = ca_coords_target - ca_coords_init
@@ -26,13 +27,11 @@ def matlab_select(
     # [Xdiff1, Ydiff1, Zdiff1, Xdiff2, Ydiff2, Zdiff2, ...]
     diff_vector = diff_vector.reshape((3 * N_nodes,))
 
-    # (N_nodes, 3, N_modes)
-    mode_vectors = jnp.stack((Vx_init, Vy_init, Vz_init), axis=1)
-
     # (3 * N_nodes, N_modes)
     # Each column is [Xdiff1, Ydiff1, Zdiff1, Xdiff2, Ydiff2, Zdiff2, ...]
     # for one mode
     mode_vectors = jnp.stack((Vx_init, Vy_init, Vz_init), axis=1)
+    mode_vectors = jnp.reshape(mode_vectors, (3 * N_nodes, N_modes))
 
     norm_diff = jnp.linalg.norm(diff_vector)
     norm_modes = jnp.linalg.norm(mode_vectors, axis=0)
@@ -48,7 +47,7 @@ def matlab_select(
 
     sel_mode_idx = jnp.argmax(jnp.abs(abs_cos_sims))
 
-    return sel_mode_idx[0], abs_cos_sims[sel_mode_idx][0]
+    return sel_mode_idx, abs_cos_sims[sel_mode_idx]
 
 
 def generate_structures(
@@ -85,8 +84,8 @@ def generate_structures(
         Vy_init=Vy_init,
         Vz_init=Vz_init,
     )
-    step_logger.info(f"Selected mode: {sel_mode_idx[0] + 1}")
-    step_logger.info(f"Selected mode cosine sim: {sel_mode_cos_sim[0]}")
+    step_logger.info(f"Selected mode: {sel_mode_idx + 1}")
+    step_logger.info(f"Selected mode cosine sim: {sel_mode_cos_sim}")
 
     sel_mode_sign = jnp.sign(sel_mode_cos_sim)
 
