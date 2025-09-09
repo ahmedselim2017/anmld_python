@@ -94,32 +94,34 @@ def generate_structures(
         cast(np.ndarray, aa_pred.atom_name), ["CA", "N", "O", "C"]
     )
 
-    mvmt_X = Vx_step[:, sel_mode_idx] * sel_mode_sign
-    mvmt_Y = Vy_step[:, sel_mode_idx] * sel_mode_sign
-    mvmt_Z = Vz_step[:, sel_mode_idx] * sel_mode_sign
+    # TODO: needs to be imporved
+    mvmt_X = np.asarray(Vx_step[:, sel_mode_idx] * sel_mode_sign)
+    mvmt_Y = np.asarray(Vy_step[:, sel_mode_idx] * sel_mode_sign)
+    mvmt_Z = np.asarray(Vz_step[:, sel_mode_idx] * sel_mode_sign)
 
-    # TODO: vectorization?
-    for i, res_id in enumerate(cast(np.ndarray, aa_pred.res_id)):
+    res_ids = np.unique(aa_pred.res_id)
+    for i in range(len(res_ids)):
+        res_id = res_ids[i]
         res_mask = aa_pred.res_id == res_id
 
         aa_pred.coord[(res_mask) & (aa_nonSC_mask)][:, 0] += (  # type: ignore
-            mvmt_X[res_id] * rescale[sel_mode_idx]
+            mvmt_X[i] * rescale[sel_mode_idx]
         )
         aa_pred.coord[(res_mask) & (aa_nonSC_mask)][:, 1] += (  # type: ignore
-            mvmt_Y[res_id] * rescale[sel_mode_idx]
+            mvmt_Y[i] * rescale[sel_mode_idx]
         )
         aa_pred.coord[(res_mask) & (aa_nonSC_mask)][:, 2] += (  # type: ignore
-            mvmt_Z[res_id] * rescale[sel_mode_idx]
+            mvmt_Z[i] * rescale[sel_mode_idx]
         )
 
         aa_pred.coord[(res_mask) & (~aa_nonSC_mask)][:, 0] += (  # type: ignore
-            mvmt_X[res_id] * rescale_SC[sel_mode_idx]
+            mvmt_X[i] * rescale_SC[sel_mode_idx]
         )
         aa_pred.coord[(res_mask) & (~aa_nonSC_mask)][:, 1] += (  # type: ignore
-            mvmt_Y[res_id] * rescale_SC[sel_mode_idx]
+            mvmt_Y[i] * rescale_SC[sel_mode_idx]
         )
         aa_pred.coord[(res_mask) & (~aa_nonSC_mask)][:, 2] += (  # type: ignore
-            mvmt_Z[res_id] * rescale_SC[sel_mode_idx]
+            mvmt_Z[i] * rescale_SC[sel_mode_idx]
         )
 
     return aa_pred

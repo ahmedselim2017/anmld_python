@@ -298,6 +298,9 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                     **app_settings.subprocess_settings.__dict__,
                 )
 
+            aa_step = get_atomarray(PS.out_dir / PS.amber_pdb_initial_min_pdb)
+            aa_target = get_atomarray(PS.out_dir / PS.amber_pdb_target_min_pdb)
+
         run_step(
             aa_step,
             aa_target,
