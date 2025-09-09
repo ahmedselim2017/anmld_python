@@ -14,7 +14,7 @@ def get_atomarray(
     extra_fields: Optional[list | str] = None,
 ) -> AtomArray:
     if not extra_fields:
-        extra_fields = ["atom_id", "b_factor", "occupancy", "charge"]
+        extra_fields = []
 
     if structure_path.suffix == ".pdb":
         structure_file = fastpdb.PDBFile.read(structure_path)
@@ -37,8 +37,7 @@ def get_atomarray(
     return cast(AtomArray, atomarray)
 
 def get_CAs(aa: AtomArray) -> AtomArray:
-    cas = aa[(aa.atom_name == "CA") & (aa.element == "C")]
-    if len(aa) == 0:
+    if not (cas := aa[(aa.atom_name == "CA") & (aa.element == "C")]):
         cas = aa[(aa.atom_name == "CA")]
     return cas
 

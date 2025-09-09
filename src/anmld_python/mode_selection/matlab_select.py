@@ -103,23 +103,23 @@ def generate_structures(
         res_mask = aa_pred.res_id == res_id
 
         aa_pred.coord[(res_mask) & (aa_nonSC_mask)][:, 0] += (  # type: ignore
-            mvmt_X[i] * rescale[sel_mode_idx]
+            mvmt_X[res_id] * rescale[sel_mode_idx]
         )
         aa_pred.coord[(res_mask) & (aa_nonSC_mask)][:, 1] += (  # type: ignore
-            mvmt_Y[i] * rescale[sel_mode_idx]
+            mvmt_Y[res_id] * rescale[sel_mode_idx]
         )
         aa_pred.coord[(res_mask) & (aa_nonSC_mask)][:, 2] += (  # type: ignore
-            mvmt_Z[i] * rescale[sel_mode_idx]
+            mvmt_Z[res_id] * rescale[sel_mode_idx]
         )
 
         aa_pred.coord[(res_mask) & (~aa_nonSC_mask)][:, 0] += (  # type: ignore
-            mvmt_X[i] * rescale_SC[sel_mode_idx]
+            mvmt_X[res_id] * rescale_SC[sel_mode_idx]
         )
         aa_pred.coord[(res_mask) & (~aa_nonSC_mask)][:, 1] += (  # type: ignore
-            mvmt_Y[i] * rescale_SC[sel_mode_idx]
+            mvmt_Y[res_id] * rescale_SC[sel_mode_idx]
         )
         aa_pred.coord[(res_mask) & (~aa_nonSC_mask)][:, 2] += (  # type: ignore
-            mvmt_Z[i] * rescale_SC[sel_mode_idx]
+            mvmt_Z[res_id] * rescale_SC[sel_mode_idx]
         )
 
     return aa_pred
