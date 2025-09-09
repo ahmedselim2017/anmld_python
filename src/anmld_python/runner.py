@@ -9,10 +9,11 @@ import numpy as np
 
 from anmld_python.settings import AppSettings
 import anmld_python.anm as ANM
+from anmld_python.tools import get_CAs
 
 
 def run_step(
-    aa_init: AtomArray,
+    aa_step: AtomArray,
     aa_target: AtomArray,
     step: int,
     step_logger: loguru.Logger,
@@ -23,15 +24,16 @@ def run_step(
     PS = app_settings.path_settings
     SP = app_settings.path_settings.step_path_settings.format_step(step)
 
-    ca_init = aa_init[(aa_init.atom_name == "CA") & (aa_init.element == "C")]
-    hessian_init = ANM.build_hessian(
-        coords=ca_init.coord,
+    ca_step = get_CAs(aa_step)
+
+    hessian_step = ANM.build_hessian(
+        coords=ca_step.coord,
         cutoff=app_settings.anmld_settings.rcut_ANM,
         gamma=app_settings.anmld_settings.gamma_ANM,
     )
     step_logger.debug("Calculated the Hessian matrix")
-    W_init, V_init, Vx_init, Vy_init, Vz_init = ANM.calc_modes(
-        hessian=hessian_init,
+    _, _, Vx_step, Vy_step, Vz_step = ANM.calc_modes(
+        hessian=hessian_step,
         mode_max=app_settings.anmld_settings.max_mode,
     )
     step_logger.debug("Calculated ANM modes")
@@ -47,11 +49,11 @@ def run_step(
             import anmld_python.mode_selection.matlab_select as matlab_select
 
             pred_aa = matlab_select.generate_structures(
-                aa_init=aa_init,
+                aa_step=aa_step,
                 aa_target=aa_target,
-                Vx_init=Vx_init,
-                Vy_init=Vy_init,
-                Vz_init=Vz_init,
+                Vx_step=Vx_step,
+                Vy_step=Vy_step,
+                Vz_step=Vz_step,
                 step_logger=step_logger,
                 app_settings=app_settings,
             )
@@ -117,7 +119,7 @@ def run_step(
         **app_settings.subprocess_settings.__dict__,
     )
 
-    resnum: int = np.unique(aa_init.res_id).size
+    resnum: int = np.unique(aa_step.res_id).size
     with open(
         PS.out_dir / SP.step_amber_ptraj_align_in, "w"
     ) as step_amber_ptraj_align_in_file:
@@ -150,7 +152,9 @@ def run_step(
 
     amber_logger.info("Running ambmask AA")
     amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_AA)
-    with open(PS.out_dir / SP.step_ambmask_AA_pdb, "w") as step_ambmask_AA_pdb_f:
+    with open(
+        PS.out_dir / SP.step_ambmask_AA_pdb, "w"
+    ) as step_ambmask_AA_pdb_f:
         subprocess.run(
             AS.cmd_prefix + cmd_ambmask_AA,
             stdout=step_ambmask_AA_pdb_f,
@@ -160,7 +164,9 @@ def run_step(
     cmd_ambmask_CA = cmd_ambmask_AA + " -find @CA"
     amber_logger.info("Running ambmask CA")
     amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_CA)
-    with open(PS.out_dir / SP.step_ambmask_AA_pdb, "w") as step_ambmask_CA_pdb_f:
+    with open(
+        PS.out_dir / SP.step_ambmask_CA_pdb, "w"
+    ) as step_ambmask_CA_pdb_f:
         subprocess.run(
             AS.cmd_prefix + cmd_ambmask_CA,
             stdout=step_ambmask_CA_pdb_f,

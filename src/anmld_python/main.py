@@ -11,7 +11,7 @@ import typer
 
 from anmld_python.runner import run_step
 from anmld_python.settings import AppSettings
-from anmld_python.tools import sanitize_pdb
+from anmld_python.tools import get_atomarray, sanitize_pdb
 
 
 @logger.catch(reraise=True)
@@ -53,13 +53,13 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
 
     step_logger.add(PS.out_dir / "anmld.log", serialize=True)
 
-    aa_init = sanitize_pdb(
+    aa_step = sanitize_pdb(
         structure_init, PS.out_dir / PS.sanitized_init_pdb_path
     )
     aa_target = sanitize_pdb(
         structure_target, PS.out_dir / PS.sanitized_target_pdb_path
     )
-    resnum: int = np.unique(aa_init.res_id).size
+    resnum: int = np.unique(aa_step.res_id).size
     step_logger.info("Sanitized initial and target structures")
 
     for step in tqdm(
@@ -288,18 +288,15 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
 
             cmd_CA_target = cmd_AA_target + " -find @CA"
             amber_logger.info("Running ambmask (target CA)")
-            amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_CA_target)
+            amber_logger.debug(
+                "Running {cmd}", cmd=AS.cmd_prefix + cmd_CA_target
+            )
             with open(PS.out_dir / PS.amber_pdb_target_min_c_pdb, "w") as out_f:
                 subprocess.run(
                     AS.cmd_prefix + cmd_CA_target,
                     stdout=out_f,
                     **app_settings.subprocess_settings.__dict__,
                 )
-
-        if app_settings.mode_selection == "MATLAB":
-            aa_step = aa_init
-        else:
-            raise NotImplementedError()
 
         run_step(
             aa_step,
@@ -309,6 +306,10 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             amber_logger,
             app_settings,
         )
+        new_structure_name = PS.step_path_settings.step_ambmask_AA_pdb.format(
+            step=step
+        )
+        aa_step = get_atomarray(PS.out_dir / new_structure_name)
 
 
 if __name__ == "__main__":

@@ -8,20 +8,21 @@ import loguru
 import numpy as np
 
 from anmld_python.settings import AppSettings
+from anmld_python.tools import get_CAs
 
 
 @jax.jit
 def matlab_select(
-    ca_coords_init: jax.Array,
+    ca_coords_step: jax.Array,
     ca_coords_target: jax.Array,
-    Vx_init: jax.Array,
-    Vy_init: jax.Array,
-    Vz_init: jax.Array,
+    Vx_step: jax.Array,
+    Vy_step: jax.Array,
+    Vz_step: jax.Array,
 ) -> tuple[jax.Array, jax.Array]:
-    N_nodes, N_modes = Vx_init.shape
+    N_nodes, N_modes = Vx_step.shape
 
     # (N_nodes, 3)
-    diff_vector = ca_coords_target - ca_coords_init
+    diff_vector = ca_coords_target - ca_coords_step
 
     # (3 * N_nodes,)
     # [Xdiff1, Ydiff1, Zdiff1, Xdiff2, Ydiff2, Zdiff2, ...]
@@ -30,7 +31,7 @@ def matlab_select(
     # (3 * N_nodes, N_modes)
     # Each column is [Xdiff1, Ydiff1, Zdiff1, Xdiff2, Ydiff2, Zdiff2, ...]
     # for one mode
-    mode_vectors = jnp.stack((Vx_init, Vy_init, Vz_init), axis=1)
+    mode_vectors = jnp.stack((Vx_step, Vy_step, Vz_step), axis=1)
     mode_vectors = jnp.reshape(mode_vectors, (3 * N_nodes, N_modes))
 
     norm_diff = jnp.linalg.norm(diff_vector)
@@ -51,18 +52,18 @@ def matlab_select(
 
 
 def generate_structures(
-    aa_init: AtomArray,
+    aa_step: AtomArray,
     aa_target: AtomArray,
-    Vx_init: jax.Array,
-    Vy_init: jax.Array,
-    Vz_init: jax.Array,
+    Vx_step: jax.Array,
+    Vy_step: jax.Array,
+    Vz_step: jax.Array,
     step_logger: loguru.Logger,
     app_settings: AppSettings,
 ) -> AtomArray:
-    N_nodes = Vx_init.shape[0]
+    N_nodes = Vx_step.shape[0]
 
     # (N_nodes, mode_max)
-    eig_mag = Vx_init**2 + Vy_init**2 + Vz_init**2
+    eig_mag = Vx_step**2 + Vy_step**2 + Vz_step**2
 
     # NOTE: Isn't this always have 1s at all elements as the eigecs are normalized?
     # (mode_max, )
@@ -72,32 +73,30 @@ def generate_structures(
     rescale = app_settings.anmld_settings.DF / jnp.sqrt(eig_mag_sum / N_nodes)
     rescale_SC = app_settings.anmld_settings.DF_SC_ratio * rescale
 
-    ca_init = aa_init[(aa_init.atom_name == "CA") & (aa_init.element == "C")]
-    ca_target = aa_target[
-        (aa_target.atom_name == "CA") & (aa_target.element == "C")
-    ]
+    ca_step = get_CAs(aa_step)
+    ca_target = get_CAs(aa_target)
 
     sel_mode_idx, sel_mode_cos_sim = matlab_select(
-        ca_coords_init=ca_init.coord,
+        ca_coords_step=ca_step.coord,
         ca_coords_target=ca_target.coord,
-        Vx_init=Vx_init,
-        Vy_init=Vy_init,
-        Vz_init=Vz_init,
+        Vx_step=Vx_step,
+        Vy_step=Vy_step,
+        Vz_step=Vz_step,
     )
     step_logger.info(f"Selected mode: {sel_mode_idx + 1}")
     step_logger.info(f"Selected mode cosine sim: {sel_mode_cos_sim}")
 
     sel_mode_sign = jnp.sign(sel_mode_cos_sim)
 
-    aa_pred = aa_init.copy()
+    aa_pred = aa_step.copy()
 
     aa_nonSC_mask = np.isin(
         cast(np.ndarray, aa_pred.atom_name), ["CA", "N", "O", "C"]
     )
 
-    mvmt_X = Vx_init[:, sel_mode_idx] * sel_mode_sign
-    mvmt_Y = Vy_init[:, sel_mode_idx] * sel_mode_sign
-    mvmt_Z = Vz_init[:, sel_mode_idx] * sel_mode_sign
+    mvmt_X = Vx_step[:, sel_mode_idx] * sel_mode_sign
+    mvmt_Y = Vy_step[:, sel_mode_idx] * sel_mode_sign
+    mvmt_Z = Vz_step[:, sel_mode_idx] * sel_mode_sign
 
     # TODO: vectorization?
     for i, res_id in enumerate(cast(np.ndarray, aa_pred.res_id)):

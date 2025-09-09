@@ -36,6 +36,12 @@ def get_atomarray(
 
     return cast(AtomArray, atomarray)
 
+def get_CAs(aa: AtomArray) -> AtomArray:
+    cas = aa[(aa.atom_name == "CA") & (aa.element == "C")]
+    if len(aa) == 0:
+        cas = aa[(aa.atom_name == "CA")]
+    return cas
+
 
 def sanitize_pdb(in_path: Path, out_path: Path, *args, **kwargs) -> AtomArray:
     aa = get_atomarray(in_path, *args, **kwargs)
