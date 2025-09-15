@@ -58,12 +58,12 @@ def run_step(
                 app_settings=app_settings,
             )
 
-    pred_path = PS.out_dir / SP.step_raw_pdb
+    pred_abs_path = PS.out_dir / SP.step_raw_pdb
 
     pred_file = fastpdb.PDBFile()
     pred_file.set_structure(pred_aa)
-    pred_file.write(pred_path)
-    step_logger.info(f"Wrote raw step coordinates to {pred_path}")
+    pred_file.write(pred_abs_path)
+    step_logger.info(f"Wrote raw step coordinates to {pred_abs_path}")
 
     amber_tleap_step_in_path = PS.out_dir / SP.step_amber_tleap_anm_pdb
 
@@ -71,14 +71,14 @@ def run_step(
         amber_tleap_step_in_f.write(
             dedent(f"""\
                 source {AS.forcefield}
-                x=loadpdb {pred_path}
-                saveamberparm x {PS.out_dir / SP.step_amber_top} {PS.out_dir / SP.step_amber_coord}
+                x=loadpdb "{pred_abs_path}"
+                saveamberparm x "{PS.out_dir / SP.step_amber_top}" "{PS.out_dir / SP.step_amber_coord}"
                 quit
                    """)
         )
     amber_logger.trace("Wrote file at {path}", path=amber_tleap_step_in_path)
 
-    cmd_tleap = f"tleap -f {amber_tleap_step_in_path}"
+    cmd_tleap = f"tleap -f \"{amber_tleap_step_in_path}\""
     amber_logger.info("Running tleap")
     amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_tleap)
     subprocess.run(
@@ -88,12 +88,12 @@ def run_step(
 
     cmd_min = dedent(f"""\
                 $AMBERHOME/bin/pmemd.cuda -O                    \\
-                    -i {PS.out_dir / PS.amber_min_in}           \\
-                    -p {PS.out_dir / SP.step_amber_top}         \\
-                    -c {PS.out_dir / SP.step_amber_coord}       \\
-                    -o {PS.out_dir / SP.step_amber_min_out}     \\
-                    -x {PS.out_dir / SP.step_amber_min_coord}   \\
-                    -r {PS.out_dir / SP.step_amber_min_rst}     \\
+                    -i "{PS.out_dir / PS.amber_min_in}"         \\
+                    -p "{PS.out_dir / SP.step_amber_top}"       \\
+                    -c "{PS.out_dir / SP.step_amber_coord}"     \\
+                    -o "{PS.out_dir / SP.step_amber_min_out}"   \\
+                    -x "{PS.out_dir / SP.step_amber_min_coord}" \\
+                    -r "{PS.out_dir / SP.step_amber_min_rst}"   \\
                     </dev/null""")
     amber_logger.info("Running pmemd min")
     amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_min)
@@ -103,14 +103,14 @@ def run_step(
     )
 
     cmd_sim = dedent(f"""\
-                $AMBERHOME/bin/pmemd.cuda -O                    \\
-                    -i {PS.out_dir / PS.amber_sim_in}           \\
-                    -p {PS.out_dir / SP.step_amber_top}         \\
-                    -c {PS.out_dir / SP.step_amber_min_rst}     \\
-                    -o {PS.out_dir / SP.step_amber_sim_out}     \\
-                    -x {PS.out_dir / SP.step_amber_sim_coord}   \\
-                    -e {PS.out_dir / SP.step_amber_sim_ener}    \\
-                    -r {PS.out_dir / SP.step_amber_sim_restart} \\
+                $AMBERHOME/bin/pmemd.cuda -O                        \\
+                    -i "{PS.out_dir / PS.amber_sim_in}"             \\
+                    -p "{PS.out_dir / SP.step_amber_top}"           \\
+                    -c "{PS.out_dir / SP.step_amber_min_rst}"       \\
+                    -o "{PS.out_dir / SP.step_amber_sim_out}"       \\
+                    -x "{PS.out_dir / SP.step_amber_sim_coord}"     \\
+                    -e "{PS.out_dir / SP.step_amber_sim_ener}"      \\
+                    -r "{PS.out_dir / SP.step_amber_sim_restart}"   \\
                     </dev/null""")
     amber_logger.info("Running pmemd sim")
     amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_sim)
@@ -125,19 +125,19 @@ def run_step(
     ) as step_amber_ptraj_align_in_file:
         step_amber_ptraj_align_in_file.write(
             dedent(f"""\
-                parm {PS.out_dir / SP.step_amber_top} [initial-top]
-                parm {PS.out_dir / PS.amber_pdb_target_top} [target-top]
-                trajin {PS.out_dir / SP.step_amber_sim_restart} parm [initial-top]
-                reference {PS.out_dir / PS.amber_target_min_algn} parm [target-top] [target-ref]
+                parm "{PS.out_dir / SP.step_amber_top}" [initial-top]
+                parm "{PS.out_dir / PS.amber_pdb_target_top}" [target-top]
+                trajin "{PS.out_dir / SP.step_amber_sim_restart}" parm [initial-top]
+                reference "{PS.out_dir / PS.amber_target_min_algn}" parm [target-top] [target-ref]
                 rms ref [target-ref] :1-{resnum}@CA out {PS.out_dir / SP.step_amber_ptraj_rms_align_dat}
-                trajout {PS.out_dir / SP.step_amber_ptraj_algn_restart} restart parm [initial-top]
+                trajout "{PS.out_dir / SP.step_amber_ptraj_algn_restart}" restart parm [initial-top]
                    """)
         )
     amber_logger.trace(
         "Wrote file at {path}", path=PS.out_dir / SP.step_amber_ptraj_align_in
     )
 
-    cmd_align = f"cpptraj {PS.out_dir / SP.step_amber_top} {PS.out_dir / SP.step_amber_ptraj_align_in}"
+    cmd_align = f"cpptraj \"{PS.out_dir / SP.step_amber_top}\" \"{PS.out_dir / SP.step_amber_ptraj_align_in}\""
     amber_logger.info("Running cpptraj")
     amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_align)
     subprocess.run(
@@ -146,8 +146,8 @@ def run_step(
     )
 
     cmd_ambmask_AA = dedent(f"""\
-            ambmask -p {PS.out_dir / SP.step_amber_top}                 \\
-                    -c {PS.out_dir / SP.step_amber_ptraj_algn_restart}  \\
+            ambmask -p "{SP.step_amber_top}"                 \\
+                    -c "{SP.step_amber_ptraj_algn_restart}"  \\
                     -prnlev 1 -out pdb""")
 
     amber_logger.info("Running ambmask AA")

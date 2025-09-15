@@ -13,7 +13,6 @@ from anmld_python.runner import run_step
 from anmld_python.settings import AppSettings
 from anmld_python.tools import get_atomarray, sanitize_pdb
 
-
 @logger.catch(reraise=True)
 def main(settings_path: Path, structure_init: Path, structure_target: Path):
     with open(settings_path, "rb") as settings_f:
@@ -132,10 +131,10 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                 AMBER_tleap_initial_f.write(
                     dedent(f"""\
                     source {AS.forcefield}
-                    x=loadpdb {PS.out_dir / PS.sanitized_init_pdb_path}
-                    saveamberparm x {PS.out_dir / PS.amber_pdb_init_top} {PS.out_dir / PS.amber_pdb_init_coord}
-                    y=loadpdb {PS.out_dir / PS.sanitized_target_pdb_path}
-                    saveamberparm y {PS.out_dir / PS.amber_pdb_target_top} {PS.out_dir / PS.amber_pdb_target_coord}
+                    x=loadpdb "{PS.out_dir / PS.sanitized_init_pdb_path}"
+                    saveamberparm x "{PS.out_dir / PS.amber_pdb_init_top}" "{PS.out_dir / PS.amber_pdb_init_coord}"
+                    y=loadpdb "{PS.out_dir / PS.sanitized_target_pdb_path}"
+                    saveamberparm y "{PS.out_dir / PS.amber_pdb_target_top}" "{PS.out_dir / PS.amber_pdb_target_coord}"
                     quit
                            """)
                 )
@@ -144,7 +143,7 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                     path=PS.out_dir / PS.amber_tleap_init_in,
                 )
 
-            cmd_tleap = f"tleap -f {PS.out_dir / PS.amber_tleap_init_in}"
+            cmd_tleap = f"tleap -f \"{PS.out_dir / PS.amber_tleap_init_in}\""
             amber_logger.info("Running tleap")
             amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_tleap)
             subprocess.run(
@@ -154,21 +153,21 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
 
             cmd_amber_initial = dedent(f"""\
                                     $AMBERHOME/bin/pmemd.cuda -O                        \\
-                                        -i {PS.out_dir / PS.amber_min_in}               \\
-                                        -p {PS.out_dir / PS.amber_pdb_init_top}         \\
-                                        -c {PS.out_dir / PS.amber_pdb_init_coord}       \\
-                                        -o {PS.out_dir / PS.amber_pdb_init_min_out}     \\
-                                        -x {PS.out_dir / PS.amber_pdb_init_min_coord}   \\
-                                        -r {PS.out_dir / PS.amber_pdb_init_min_rst}     \\
+                                        -i "{PS.out_dir / PS.amber_min_in}"             \\
+                                        -p "{PS.out_dir / PS.amber_pdb_init_top}"       \\
+                                        -c "{PS.out_dir / PS.amber_pdb_init_coord}"     \\
+                                        -o "{PS.out_dir / PS.amber_pdb_init_min_out}"   \\
+                                        -x "{PS.out_dir / PS.amber_pdb_init_min_coord}" \\
+                                        -r "{PS.out_dir / PS.amber_pdb_init_min_rst}"   \\
                                         </dev/null""")
             cmd_amber_target = dedent(f"""\
-                                    $AMBERHOME/bin/pmemd.cuda -O                        \\
-                                        -i {PS.out_dir / PS.amber_min_in}               \\
-                                        -p {PS.out_dir / PS.amber_pdb_target_top}       \\
-                                        -c {PS.out_dir / PS.amber_pdb_target_coord}     \\
-                                        -o {PS.out_dir / PS.amber_pdb_target_min_out}   \\
-                                        -x {PS.out_dir / PS.amber_pdb_target_min_coord} \\
-                                        -r {PS.out_dir / PS.amber_pdb_target_min_rst}   \\
+                                    $AMBERHOME/bin/pmemd.cuda -O                            \\
+                                        -i "{PS.out_dir / PS.amber_min_in}"                 \\
+                                        -p "{PS.out_dir / PS.amber_pdb_target_top}"         \\
+                                        -c "{PS.out_dir / PS.amber_pdb_target_coord}"       \\
+                                        -o "{PS.out_dir / PS.amber_pdb_target_min_out}"     \\
+                                        -x "{PS.out_dir / PS.amber_pdb_target_min_coord}"   \\
+                                        -r "{PS.out_dir / PS.amber_pdb_target_min_rst}"     \\
                                         </dev/null""")
             amber_logger.info("Running pmemd min for the initial structure")
             amber_logger.debug(
@@ -196,8 +195,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             ) as amber_ptraj_rewrite_initial_f:
                 amber_ptraj_rewrite_initial_f.write(
                     dedent(f"""\
-                            trajin {PS.out_dir / PS.amber_pdb_init_min_rst}
-                            trajout {PS.out_dir / PS.amber_pdb_rewrite_init_min_rst} restart
+                            trajin "{PS.out_dir / PS.amber_pdb_init_min_rst}"
+                            trajout "{PS.out_dir / PS.amber_pdb_rewrite_init_min_rst}" restart
                            """)
                 )
                 amber_logger.trace(
@@ -205,9 +204,9 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                     path=PS.out_dir / PS.amber_ptraj_rewrite_init_in,
                 )
 
-            cmd_rewrite = dedent(f"""cpptraj                                                \\
-                                        {PS.out_dir / PS.amber_pdb_init_top}    \\
-                                        {PS.out_dir / PS.amber_ptraj_rewrite_init_in}""")
+            cmd_rewrite = dedent(f"""cpptraj                                    \\
+                                        "{PS.out_dir / PS.amber_pdb_init_top}"  \\
+                                        "{PS.out_dir / PS.amber_ptraj_rewrite_init_in}\"""")
             amber_logger.info("Running cpptraj")
             amber_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_rewrite)
             subprocess.run(
@@ -222,12 +221,12 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
             ) as amber_ptraj_align_target2initial_f:
                 amber_ptraj_align_target2initial_f.write(
                     dedent(f"""\
-                            parm {PS.out_dir / PS.amber_pdb_init_top} [initial-top]
-                            parm {PS.out_dir / PS.amber_pdb_target_top} [target-top]
-                            trajin {PS.out_dir / PS.amber_pdb_target_min_rst} parm [target-top]
-                            reference {PS.out_dir / PS.amber_pdb_init_min_rst} parm [initial-top] [initial-ref]
-                            rms ref [initial-ref]  :1-{resnum}@CA out {PS.out_dir / PS.amber_rms_target_align_dat} 
-                            trajout {PS.out_dir / PS.amber_target_min_algn} restart parm [target-top]
+                            parm "{PS.out_dir / PS.amber_pdb_init_top}" [initial-top]
+                            parm "{PS.out_dir / PS.amber_pdb_target_top}" [target-top]
+                            trajin "{PS.out_dir / PS.amber_pdb_target_min_rst}" parm [target-top]
+                            reference "{PS.out_dir / PS.amber_pdb_init_min_rst}" parm [initial-top] [initial-ref]
+                            rms ref [initial-ref]  :1-{resnum}@CA out "{PS.out_dir / PS.amber_rms_target_align_dat}"
+                            trajout "{PS.out_dir / PS.amber_target_min_algn}" restart parm [target-top]
                            """)
                 )
                 amber_logger.trace(
@@ -235,9 +234,9 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                     path=PS.out_dir / PS.amber_ptraj_align_target2initial_in,
                 )
 
-            cmd_align = dedent(f"""cpptraj                                  \\
-                                    {PS.out_dir / PS.amber_pdb_target_top}  \\
-                                    {PS.out_dir / PS.amber_ptraj_align_target2initial_in}""")
+            cmd_align = dedent(f"""cpptraj                                      \\
+                                    "{PS.out_dir / PS.amber_pdb_target_top}"    \\
+                                    "{PS.out_dir / PS.amber_ptraj_align_target2initial_in}\"""")
             amber_logger.info("Running cpptraj")
             amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_align)
             subprocess.run(
@@ -247,8 +246,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
 
             # create initial all-atom and alpha C pdbs
             cmd_AA_init = dedent(f"""\
-                    ambmask -p {PS.out_dir / PS.amber_pdb_init_top} \\
-                        -c {PS.out_dir / PS.amber_pdb_rewrite_init_min_rst}     \\
+                    ambmask -p "{PS.amber_pdb_init_top}"            \\
+                        -c "{PS.amber_pdb_rewrite_init_min_rst}"    \\
                         -prnlev 1 -out pdb""")
             amber_logger.info("Running ambmask (initial AA)")
             amber_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_AA_init)
@@ -272,8 +271,8 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
                 )
 
             cmd_AA_target = dedent(f"""\
-                    ambmask -p {PS.out_dir / PS.amber_pdb_target_top}  \\
-                        -c {PS.out_dir / PS.amber_target_min_algn} \\
+                    ambmask -p "{PS.amber_pdb_target_top}"  \\
+                        -c "{PS.amber_target_min_algn}"     \\
                         -prnlev 1 -out pdb""")
             amber_logger.info("Running ambmask (target AA)")
             amber_logger.debug(
