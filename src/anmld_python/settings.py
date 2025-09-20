@@ -17,7 +17,7 @@ class SubprocessSettings(BaseModel):
     executable: Path = Path("/bin/bash")
 
 class StepPathSettings(BaseSettings):
-    step_raw_pdb: str                = "STEP_{step}_raw.pdb"
+    step_anm_pdb: str                = "STEP_{step}_ANM.pdb"
     step_amber_tleap_anm_pdb: str    = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
 
     step_amber_top: str     = "STEP_{step}_AMBER_raw.top"
@@ -36,9 +36,11 @@ class StepPathSettings(BaseSettings):
     step_amber_ptraj_rms_align_dat: str = "STEP_{step}_AMBER_rms.dat"
     step_amber_ptraj_algn_restart: str = "STEP_{step}_AMBER_algn.restart"
 
-    # TODO: rename non-step ambnmask outs to be similar to step ones
-    step_ambmask_AA_pdb: str = "STEP_{step}_ambmask_AA.pdb"
-    step_ambmask_CA_pdb: str = "STEP_{step}_ambmask_CA.pdb"
+    step_openmm_min: str    = "STEP_{step}_OpenMM_min.pdb"
+    step_openmm_ld: str     = "STEP_{step}_OpenMM_ld.pdb"
+
+    step_anmld_pdb: str = "STEP_{step}_ANMLD.pdb"
+    step_anmld_CA_pdb: str = "STEP_{step}_ANMLD_CA.pdb"
 
 
     def format_step(self, step: int):
@@ -97,7 +99,7 @@ class PathSettings(BaseSettings):
 class AmberSettings(BaseSettings):
     temp: PositiveFloat = Field(310)  # TODO: float or int?
     min_step: PositiveInt = Field(500)
-    sim_step: PositiveInt = Field(100) # TODO: rename to ld_step
+    ld_step: PositiveInt = Field(100)
     forcefield: str = Field("leaprc.protein.ff14SB")
     cmd_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
 
@@ -106,6 +108,8 @@ class OpenMMSettings(BaseSettings):
     min_step: PositiveInt = Field(500)
     ld_step: PositiveInt = Field(100)
     ld_temp: PositiveFloat = Field(310)
+    save_min: bool = False
+    save_ld: bool = False
 
 
 class ANMLDSettings(BaseSettings):
@@ -115,13 +119,12 @@ class ANMLDSettings(BaseSettings):
     DF: PositiveFloat = Field(0.6)
     DF_SC_ratio: PositiveFloat = Field(1)
     max_mode: PositiveInt = Field(30)
-    version: int = Field(0)
 
 
 class AppSettings(BaseSettings):
     run_name: str = Field("anmld_run", alias="name")
     logging_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = (
-        "INFO"
+        "DEBUG"
     )
     mode_selection: Literal["MATLAB"] = "MATLAB"
     LD_method: Literal["AMBER", "OpenMM"] = "OpenMM"
