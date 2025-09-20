@@ -35,9 +35,23 @@ venv = ".venv"
 # Allow lines to be as long as 120.
 line-length = 80
 
+[tool.uv]
+environments = [
+    "sys_platform == 'linux'"
+]
+
+[tool.uv.sources]
+openmmforcefields = { git = "https://github.com/openmm/openmmforcefields", tag = "0.15.0" }
+
 [dependency-groups]
 dev = [
     "ipython>=9.4.0",
     "prody>=2.6.1",
     "pytest>=8.4.1",
+]
+openmm = [
+    "hydride>=1.2.3",
+    "openmm-cuda-12>=8.3.1",
+    "openmm[cuda12]>=8.3.1",
+    "openmmforcefields",
 ]

@@ -53,7 +53,7 @@ class StepPathSettings(BaseSettings):
 
 
 class PathSettings(BaseSettings):
-    out_dir: NewPath = Field(Path("out"))
+    out_dir: NewPath = Field(Path("out_openmm")) # TODO: doesn't work
 
     sanitized_init_pdb_path: Path = Path("sanitized_init.pdb")
     sanitized_target_pdb_path: Path = Path("sanitized_target.pdb")
@@ -97,9 +97,15 @@ class PathSettings(BaseSettings):
 class AmberSettings(BaseSettings):
     temp: PositiveFloat = Field(310)  # TODO: float or int?
     min_step: PositiveInt = Field(500)
-    sim_step: PositiveInt = Field(100)
+    sim_step: PositiveInt = Field(100) # TODO: rename to ld_step
     forcefield: str = Field("leaprc.protein.ff14SB")
     cmd_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
+
+class OpenMMSettings(BaseSettings):
+    forcefield : str = Field("amber14/protein.ff14SB.xml")
+    min_step: PositiveInt = Field(500)
+    ld_step: PositiveInt = Field(100)
+    ld_temp: PositiveFloat = Field(310)
 
 
 class ANMLDSettings(BaseSettings):
@@ -118,8 +124,11 @@ class AppSettings(BaseSettings):
         "INFO"
     )
     mode_selection: Literal["MATLAB"] = "MATLAB"
+    LD_method: Literal["AMBER", "OpenMM"] = "OpenMM"
 
     anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")   # type: ignore
     amber_settings: AmberSettings = Field(AmberSettings(), alias="AMBER")   # type: ignore
+    openmm_settings: OpenMMSettings = Field(OpenMMSettings(), alias="OpenMM")   # type: ignore
+
     path_settings: PathSettings = Field(PathSettings(), alias="PATHS")      # type: ignore
     subprocess_settings: SubprocessSettings = Field(SubprocessSettings(), alias="SUBPROCESS") # type:ignore
