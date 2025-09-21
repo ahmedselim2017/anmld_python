@@ -1,8 +1,8 @@
 from pathlib import Path
 from textwrap import dedent
 import importlib.metadata
+from typing import Optional
 from loguru import logger
-import subprocess
 import tomllib
 
 from tqdm import tqdm
@@ -15,7 +15,13 @@ from anmld_python.tools import get_atomarray, sanitize_pdb
 
 
 @logger.catch(reraise=True)
-def main(settings_path: Path, structure_init: Path, structure_target: Path):
+def main(
+    settings_path: Path,
+    path_abs_structure_init: Path,
+    path_abs_structure_target: Path,
+    chain_init: Optional[str] = None,
+    chain_target: Optional[str] = None
+):
     with open(settings_path, "rb") as settings_f:
         app_settings = AppSettings(**tomllib.load(settings_f))
 
@@ -40,9 +46,6 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
     step_logger.info(f"Version: {importlib.metadata.version('anmld_python')}")
 
     PS = app_settings.path_settings
-
-    structure_init = structure_init.absolute()
-    structure_target = structure_target.absolute()
     PS.out_dir = PS.out_dir.absolute()
 
     app_settings.subprocess_settings.cwd = PS.out_dir
@@ -52,14 +55,22 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
 
     step_logger.add(PS.out_dir / "anmld.log", serialize=True)
 
+    step_logger.info("Sanitizing the initial and target structures")
     aa_step = sanitize_pdb(
-        structure_init, PS.out_dir / PS.sanitized_init_pdb_path
+        in_path=path_abs_structure_init.absolute(),
+        out_path=PS.out_dir / PS.sanitized_init_structure,
+        app_settings=app_settings,
+        chain_id=chain_init,
     )
     aa_target = sanitize_pdb(
-        structure_target, PS.out_dir / PS.sanitized_target_pdb_path
+        in_path=path_abs_structure_target.absolute(),
+        out_path=PS.out_dir / PS.sanitized_target_structure,
+        app_settings=app_settings,
+        chain_id=chain_target,
     )
-    step_logger.info("Sanitized initial and target structures")
 
+    mm_min_sim = mm_ld_sim = None
+    aa_step = aa_target = None
     for step in tqdm(
         range(app_settings.anmld_settings.n_steps),
         desc="Running ANM-LD",
@@ -71,30 +82,66 @@ def main(settings_path: Path, structure_init: Path, structure_target: Path):
 
         if step == 0:
             match app_settings.LD_method:
-                case _:  # TODO: add openmm setup
+                case "OpenMM":  # TODO: Convert AMBER setup to openMM
+                    from anmld_python.ld.openmm import run_setup, setup_sims
+                    import openmm.app as mm_app
+
+                    anm_pdb = mm_app.PDBFile(
+                        str(PS.out_dir / PS.sanitized_init_structure)
+                    )  # TODO: get it from biotite
+
+                    mm_min_sim, mm_ld_sim = setup_sims(
+                        topology=anm_pdb.topology,
+                        app_settings=app_settings,
+                    )
+
+                    # TODO: paths
+                    run_setup(
+                        path_init=PS.out_dir / PS.sanitized_init_structure,
+                        path_target=PS.out_dir / PS.sanitized_target_structure,
+                        min_sim=mm_min_sim,
+                        ld_logger=ld_logger,
+                        app_settings=app_settings,
+                    )
+
+                    aa_step = get_atomarray(
+                        PS.out_dir / PS.openmm_min_aligned_init_pdb
+                    )
+                    aa_target = get_atomarray(
+                        PS.out_dir / PS.openmm_min_target_pdb
+                    )
+                case "AMBER":
                     from anmld_python.ld.amber import run_setup
 
+                    aa_step = get_atomarray(PS.out_dir / PS.sanitized_init_structure)
+
                     resnum = np.unique(aa_step.res_id).size  # type: ignore
+                    # TODO: Paths
                     run_setup(
+                        path_abs_init=PS.out_dir / PS.sanitized_init_structure,
+                        path_abs_target=PS.out_dir / PS.sanitized_target_structure,
                         resnum=resnum,
                         ld_logger=ld_logger,
                         app_settings=app_settings,
                     )
 
-            aa_step = get_atomarray(PS.out_dir / PS.amber_pdb_initial_min_pdb)
-            aa_target = get_atomarray(PS.out_dir / PS.amber_pdb_target_min_pdb)
+                    aa_step = get_atomarray(
+                        PS.out_dir / PS.amber_pdb_initial_min_pdb
+                    )
+                    aa_target = get_atomarray(
+                        PS.out_dir / PS.amber_pdb_target_min_pdb
+                    )
 
-            # TODO
-            if True:
-                aa_step = get_atomarray(Path("deneme.pdb"))
 
         run_step(
-            aa_step,
-            aa_target,
-            step,
-            step_logger,
-            ld_logger,
-            app_settings,
+            aa_step=aa_step,
+            aa_target=aa_target,
+            step=step,
+            step_logger=step_logger,
+            ld_logger=ld_logger,
+            app_settings=app_settings,
+            mm_min_sim=mm_min_sim,
+            mm_ld_sim=mm_ld_sim,
         )
         new_structure_name = PS.step_path_settings.step_anmld_pdb.format(
             step=step

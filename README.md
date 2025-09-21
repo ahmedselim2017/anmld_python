@@ -11,7 +11,7 @@
 - [ ] mmCIF support
 - [ ] Early stopping
 - [x] openMM support
-    - [ ] first step
+    - [x] first step
     - [x] min.in
         - [x] forcefield
         - [x] imin = 1

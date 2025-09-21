@@ -15,6 +15,7 @@ import loguru
 import openmm as mm
 
 from anmld_python.settings import AppSettings, StepPathSettings
+from anmld_python.tools import get_atomarray
 
 
 def setup_sims(
@@ -80,32 +81,87 @@ def setup_sims(
     return min_simulation, ld_simulation
 
 
+def run_setup(
+    path_init: Path,
+    path_target: Path,
+    min_sim: Simulation,
+    ld_logger: loguru.Logger,
+    app_settings: AppSettings,
+):
+    PS = app_settings.path_settings
+    MS = app_settings.openmm_settings
+
+    aa_temp = get_atomarray(path_init)
+
+    pdb_init = mm_app.PDBFile(str(path_init))  # TODO: get it from biotite
+    pdb_target = mm_app.PDBFile(str(path_target))  # TODO: get it from biotite
+
+    # NOTE: min_sim is assumed to be not used
+    ld_logger.debug("Running minimization for the initial structure.")
+    min_sim.context.setPositions(pdb_init.positions)
+    min_sim.minimizeEnergy(maxIterations=MS.min_step)
+
+    min_init_aa = b_mm.from_context(aa_temp, min_sim.context)
+    if MS.save_ld or app_settings.logging_level == "DEBUG":
+        min_init_file = fastpdb.PDBFile()
+        min_init_file.set_structure(min_init_aa)
+        min_init_file.write(
+            app_settings.path_settings.out_dir / PS.openmm_min_init_pdb
+        )
+
+    min_sim.context.reinitialize()
+
+    ld_logger.debug("Running minimization for the target structure.")
+    min_sim.context.setPositions(pdb_target.positions)
+    min_sim.minimizeEnergy(maxIterations=MS.min_step)
+
+    min_target_aa = b_mm.from_context(aa_temp, min_sim.context)
+    if MS.save_ld or app_settings.logging_level == "DEBUG":
+        min_target_file = fastpdb.PDBFile()
+        min_target_file.set_structure(min_target_aa)
+        min_target_file.write(
+            app_settings.path_settings.out_dir / PS.openmm_min_target_pdb
+        )
+
+    ld_logger.debug("Aligning the minimized initial to the minimized target")
+    min_aligned_init_aa, _ = b_structure.superimpose(
+        fixed=min_target_aa,
+        mobile=min_init_aa,
+    )
+
+    min_aligned_init_file = fastpdb.PDBFile()
+    min_aligned_init_file.set_structure(min_aligned_init_aa)
+    min_aligned_init_file.write(
+        app_settings.path_settings.out_dir / PS.openmm_min_aligned_init_pdb
+    )
+
+
 def run_ld_step(
     pred_abs_path: Path,
     aa_anm: AtomArray,
     aa_target: AtomArray,
+    min_sim: Simulation,
+    ld_sim: Simulation,
     ld_logger: loguru.Logger,
     app_settings: AppSettings,
     step_paths: StepPathSettings,
 ):
     MS = app_settings.openmm_settings
 
+    ld_logger.debug("Reinitializing simulations")
+    min_sim.context.reinitialize()
+    ld_sim.context.reinitialize()
+
     anm_pdb = mm_app.PDBFile(str(pred_abs_path))  # TODO: get it from biotite
-    min_simulation, ld_simulation = setup_sims(
-        topology=anm_pdb.topology,
-        app_settings=app_settings,
-    )
 
     ld_logger.debug("Running minimization")
-    min_simulation.context.setPositions(anm_pdb.positions)
-    min_simulation.minimizeEnergy(maxIterations=MS.min_step)
+    min_sim.context.setPositions(anm_pdb.positions)
+    min_sim.minimizeEnergy(maxIterations=MS.min_step)
 
-    min_positions = min_simulation.context.getState(
-        positions=True
-    ).getPositions()
+    min_positions = min_sim.context.getState(positions=True).getPositions()
 
     if MS.save_min or app_settings.logging_level == "DEBUG":
-        min_aa = b_mm.from_context(aa_anm, min_simulation.context)
+        min_aa = b_mm.from_context(aa_anm, min_sim.context)
         min_out_file = fastpdb.PDBFile()
         min_out_file.set_structure(min_aa)
         min_out_file.write(
@@ -114,12 +170,12 @@ def run_ld_step(
 
     ld_logger.debug("Running Langevin dynamics simulation")
 
-    ld_simulation.context.setPositions(min_positions)
-    ld_simulation.context.setVelocitiesToTemperature(MS.ld_temp)  # tempi
-    ld_simulation.step(MS.ld_step)  # nstlim
+    ld_sim.context.setPositions(min_positions)
+    ld_sim.context.setVelocitiesToTemperature(MS.ld_temp)  # tempi
+    ld_sim.step(MS.ld_step)  # nstlim
 
     ld_logger.debug("Ran Langevin dynamics simulation")
-    ld_aa = b_mm.from_context(aa_anm, ld_simulation.context)
+    ld_aa = b_mm.from_context(aa_anm, ld_sim.context)
 
     if MS.save_ld or app_settings.logging_level == "DEBUG":
         ld_out_file = fastpdb.PDBFile()
@@ -128,6 +184,7 @@ def run_ld_step(
             app_settings.path_settings.out_dir / step_paths.step_openmm_ld
         )
 
+    ld_logger.debug("Aligning the LD result to the target")
     ld_aligned_aa, _ = b_structure.superimpose(fixed=aa_target, mobile=ld_aa)
     ld_rmsd = b_structure.rmsd(aa_target, ld_aligned_aa)
 

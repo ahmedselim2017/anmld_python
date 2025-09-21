@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Any, Optional
 
 from biotite.structure import AtomArray
 import fastpdb
@@ -16,6 +17,8 @@ def run_step(
     step_logger: loguru.Logger,
     ld_logger: loguru.Logger,
     app_settings: AppSettings,
+    mm_min_sim: Optional[Any] = None,
+    mm_ld_sim: Optional[Any] = None
 ):
     PS = app_settings.path_settings
     SP = app_settings.path_settings.step_path_settings.format_step(step)
@@ -64,10 +67,16 @@ def run_step(
     match app_settings.LD_method:
         case "OpenMM":
             from anmld_python.ld.openmm import run_ld_step
+            
+            if mm_min_sim is None or mm_ld_sim is None:
+                raise ValueError("mm_min_sim and mm_ld_sim must not be None.")
+
             run_ld_step(
                 aa_anm=pred_aa,
                 aa_target=aa_target,
                 pred_abs_path=pred_abs_path,
+                min_sim = mm_min_sim,
+                ld_sim = mm_ld_sim,
                 ld_logger=ld_logger,
                 app_settings=app_settings,
                 step_paths=SP,

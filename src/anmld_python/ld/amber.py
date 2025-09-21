@@ -9,6 +9,8 @@ from anmld_python.settings import AppSettings, StepPathSettings
 
 
 def run_setup(
+    path_abs_init: Path,
+    path_abs_target: Path,
     resnum: int,
     ld_logger: loguru.Logger,
     app_settings: AppSettings,
@@ -77,9 +79,9 @@ def run_setup(
         AMBER_tleap_initial_f.write(
             dedent(f"""\
             source {AS.forcefield}
-            x=loadpdb "{PS.out_dir / PS.sanitized_init_pdb_path}"
+            x=loadpdb "{path_abs_init}"
             saveamberparm x "{PS.out_dir / PS.amber_pdb_init_top}" "{PS.out_dir / PS.amber_pdb_init_coord}"
-            y=loadpdb "{PS.out_dir / PS.sanitized_target_pdb_path}"
+            y=loadpdb "{path_abs_target}"
             saveamberparm y "{PS.out_dir / PS.amber_pdb_target_top}" "{PS.out_dir / PS.amber_pdb_target_coord}"
             quit
                    """)

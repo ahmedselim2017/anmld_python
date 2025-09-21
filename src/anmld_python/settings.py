@@ -18,8 +18,11 @@ class SubprocessSettings(BaseModel):
 
 class StepPathSettings(BaseSettings):
     step_anm_pdb: str                = "STEP_{step}_ANM.pdb"
-    step_amber_tleap_anm_pdb: str    = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
 
+    step_openmm_min: str    = "STEP_{step}_OpenMM_min.pdb"
+    step_openmm_ld: str     = "STEP_{step}_OpenMM_ld.pdb"
+
+    step_amber_tleap_anm_pdb: str    = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
     step_amber_top: str     = "STEP_{step}_AMBER_raw.top"
     step_amber_coord: str   = "STEP_{step}_AMBER_raw.coord"
 
@@ -35,9 +38,6 @@ class StepPathSettings(BaseSettings):
     step_amber_ptraj_align_in: str      = "STEP_{step}_AMBER_sim_ptraj_align.in"
     step_amber_ptraj_rms_align_dat: str = "STEP_{step}_AMBER_rms.dat"
     step_amber_ptraj_algn_restart: str = "STEP_{step}_AMBER_algn.restart"
-
-    step_openmm_min: str    = "STEP_{step}_OpenMM_min.pdb"
-    step_openmm_ld: str     = "STEP_{step}_OpenMM_ld.pdb"
 
     step_anmld_pdb: str = "STEP_{step}_ANMLD.pdb"
     step_anmld_CA_pdb: str = "STEP_{step}_ANMLD_CA.pdb"
@@ -57,8 +57,12 @@ class StepPathSettings(BaseSettings):
 class PathSettings(BaseSettings):
     out_dir: NewPath = Field(Path("out_openmm")) # TODO: doesn't work
 
-    sanitized_init_pdb_path: Path = Path("sanitized_init.pdb")
-    sanitized_target_pdb_path: Path = Path("sanitized_target.pdb")
+    sanitized_init_structure: str = "sanitized_init.pdb"
+    sanitized_target_structure: str = "sanitized_target.pdb"
+
+    openmm_min_init_pdb: str            = "OpenMM_min_init.pdb"
+    openmm_min_aligned_init_pdb: str    = "OpenMM_min_aligned_init.pdb"
+    openmm_min_target_pdb: str          = "OpenMM_min_target.pdb"
 
     amber_min_in: Path = Path("AMBER_min.in")
     amber_sim_in: Path = Path("AMBER_sim.in")
