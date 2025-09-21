@@ -11,7 +11,7 @@ import typer
 
 from anmld_python.runner import run_step
 from anmld_python.settings import AppSettings
-from anmld_python.tools import get_atomarray, sanitize_pdb
+from anmld_python.tools import LDError, get_atomarray, sanitize_pdb
 
 
 @logger.catch(reraise=True)
@@ -20,17 +20,18 @@ def main(
     path_abs_structure_init: Path,
     path_abs_structure_target: Path,
     chain_init: Optional[str] = None,
-    chain_target: Optional[str] = None
+    chain_target: Optional[str] = None,
 ):
     with open(settings_path, "rb") as settings_f:
         app_settings = AppSettings(**tomllib.load(settings_f))
 
+    # TODO: set logger level
     logger.remove()
     logger_format = (
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
         "<level>{level: <8}</level> | "
         "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-        "<level>STEP {extra[step]}</level> | "
+        "<level>STEP {extra[step]}</level> | " # TODO: Better formatting
         "<level>{message}</level> | "
         "<level>{extra}</level>"
     )
@@ -39,6 +40,7 @@ def main(
         colorize=True,
         format=logger_format,
     )
+
 
     step_logger = logger.bind(step=-1)
 
@@ -69,12 +71,15 @@ def main(
         chain_id=chain_target,
     )
 
-    mm_min_sim = mm_ld_sim = None
-    aa_step = aa_target = None
-    for step in tqdm(
-        range(app_settings.anmld_settings.n_steps),
+    pbar = tqdm(
+        total=app_settings.anmld_settings.n_steps,
         desc="Running ANM-LD",
-    ):
+    )
+    mm_min_sim = mm_ld_sim = None
+    step = 0
+    while True:
+        if step >= app_settings.anmld_settings.n_steps:
+            break
         step_logger = logger.bind(step=step)
         ld_logger = step_logger.bind(LD=True)
 
@@ -113,13 +118,16 @@ def main(
                 case "AMBER":
                     from anmld_python.ld.amber import run_setup
 
-                    aa_step = get_atomarray(PS.out_dir / PS.sanitized_init_structure)
+                    aa_step = get_atomarray(
+                        PS.out_dir / PS.sanitized_init_structure
+                    )
 
                     resnum = np.unique(aa_step.res_id).size  # type: ignore
                     # TODO: Paths
                     run_setup(
                         path_abs_init=PS.out_dir / PS.sanitized_init_structure,
-                        path_abs_target=PS.out_dir / PS.sanitized_target_structure,
+                        path_abs_target=PS.out_dir
+                        / PS.sanitized_target_structure,
                         resnum=resnum,
                         ld_logger=ld_logger,
                         app_settings=app_settings,
@@ -132,21 +140,31 @@ def main(
                         PS.out_dir / PS.amber_pdb_target_min_pdb
                     )
 
+        try:
+            run_step(
+                aa_step=aa_step,  # type: ignore
+                aa_target=aa_target,  # type: ignore
+                step=step,
+                step_logger=step_logger,
+                ld_logger=ld_logger,
+                app_settings=app_settings,
+                mm_min_sim=mm_min_sim,
+                mm_ld_sim=mm_ld_sim,
+            )
+            new_structure_name = PS.step_path_settings.step_anmld_pdb.format(
+                step=step
+            )
+            aa_step = get_atomarray(PS.out_dir / new_structure_name)
 
-        run_step(
-            aa_step=aa_step,
-            aa_target=aa_target,
-            step=step,
-            step_logger=step_logger,
-            ld_logger=ld_logger,
-            app_settings=app_settings,
-            mm_min_sim=mm_min_sim,
-            mm_ld_sim=mm_ld_sim,
-        )
-        new_structure_name = PS.step_path_settings.step_anmld_pdb.format(
-            step=step
-        )
-        aa_step = get_atomarray(PS.out_dir / new_structure_name)
+            step += 1
+            pbar.update(1)
+        except LDError:
+            ld_logger.warning(
+                f"The LD simulation returned an error. Halving the DF value to {app_settings.anmld_settings.DF / 2} and retrying."
+            )
+            app_settings.anmld_settings.DF /= 2
+
+    pbar.close()
 
 
 if __name__ == "__main__":

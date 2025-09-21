@@ -9,6 +9,8 @@ import biotite.structure as b_structure
 
 from anmld_python.settings import AppSettings
 
+class LDError(Exception):
+    pass
 
 def get_atomarray(
     structure_path: Path,

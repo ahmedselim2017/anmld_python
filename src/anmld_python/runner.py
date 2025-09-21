@@ -7,7 +7,7 @@ import loguru
 import numpy as np
 
 from anmld_python.settings import AppSettings
-from anmld_python.tools import get_CAs
+from anmld_python.tools import LDError, get_CAs
 import anmld_python.anm as ANM
 
 def run_step(
@@ -67,27 +67,37 @@ def run_step(
     match app_settings.LD_method:
         case "OpenMM":
             from anmld_python.ld.openmm import run_ld_step
+            from openmm import OpenMMException
+            from scipy.linalg import LinAlgError
             
             if mm_min_sim is None or mm_ld_sim is None:
                 raise ValueError("mm_min_sim and mm_ld_sim must not be None.")
 
-            run_ld_step(
-                aa_anm=pred_aa,
-                aa_target=aa_target,
-                pred_abs_path=pred_abs_path,
-                min_sim = mm_min_sim,
-                ld_sim = mm_ld_sim,
-                ld_logger=ld_logger,
-                app_settings=app_settings,
-                step_paths=SP,
-            )
+            try:
+                run_ld_step(
+                    aa_anm=pred_aa,
+                    aa_target=aa_target,
+                    pred_abs_path=pred_abs_path,
+                    min_sim = mm_min_sim,
+                    ld_sim = mm_ld_sim,
+                    ld_logger=ld_logger,
+                    app_settings=app_settings,
+                    step_paths=SP,
+                )
+            except (OpenMMException, LinAlgError):
+                raise LDError
         case "AMBER":
             from anmld_python.ld.amber import run_ld_step
+            from subprocess import CalledProcessError
+
             resnum: int = np.unique(aa_step.res_id).size  # type: ignore
-            run_ld_step(
-                pred_abs_path=pred_abs_path,
-                resnum=resnum,
-                ld_logger=ld_logger,
-                app_settings=app_settings,
-                SP=SP,
-            )
+            try:
+                run_ld_step(
+                    pred_abs_path=pred_abs_path,
+                    resnum=resnum,
+                    ld_logger=ld_logger,
+                    app_settings=app_settings,
+                    SP=SP,
+                )
+            except CalledProcessError:
+                raise LDError

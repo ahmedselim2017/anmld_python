@@ -123,6 +123,7 @@ class ANMLDSettings(BaseSettings):
     DF: PositiveFloat = Field(0.6)
     DF_SC_ratio: PositiveFloat = Field(1)
     max_mode: PositiveInt = Field(30)
+    early_stopping: PositiveFloat = Field(2) # NOTE: only supported for OpenMM
 
 
 class AppSettings(BaseSettings):
