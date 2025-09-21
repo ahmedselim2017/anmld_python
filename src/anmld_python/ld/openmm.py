@@ -145,7 +145,7 @@ def run_ld_step(
     ld_logger: loguru.Logger,
     app_settings: AppSettings,
     step_paths: StepPathSettings,
-):
+) -> float:
     MS = app_settings.openmm_settings
 
     ld_logger.debug("Reinitializing simulations")
@@ -194,3 +194,5 @@ def run_ld_step(
         app_settings.path_settings.out_dir / step_paths.step_anmld_pdb
     )
     ld_logger.info(f"Finished LD step {ld_rmsd=}")
+
+    return ld_rmsd

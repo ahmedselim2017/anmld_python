@@ -19,7 +19,7 @@ def run_step(
     app_settings: AppSettings,
     mm_min_sim: Optional[Any] = None,
     mm_ld_sim: Optional[Any] = None
-):
+) -> Optional[float]:
     PS = app_settings.path_settings
     SP = app_settings.path_settings.step_path_settings.format_step(step)
 
@@ -74,7 +74,7 @@ def run_step(
                 raise ValueError("mm_min_sim and mm_ld_sim must not be None.")
 
             try:
-                run_ld_step(
+                rmsd = run_ld_step(
                     aa_anm=pred_aa,
                     aa_target=aa_target,
                     pred_abs_path=pred_abs_path,
@@ -92,7 +92,7 @@ def run_step(
 
             resnum: int = np.unique(aa_step.res_id).size  # type: ignore
             try:
-                run_ld_step(
+                rmsd = run_ld_step(
                     pred_abs_path=pred_abs_path,
                     resnum=resnum,
                     ld_logger=ld_logger,
@@ -101,3 +101,4 @@ def run_step(
                 )
             except CalledProcessError:
                 raise LDError
+    return rmsd

@@ -2,10 +2,12 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 import subprocess
+from typing import Optional
 
 import loguru
 
 from anmld_python.settings import AppSettings, StepPathSettings
+from anmld_python.tools import get_atomarray
 
 
 def run_setup(
@@ -242,7 +244,7 @@ def run_ld_step(
     ld_logger: loguru.Logger,
     app_settings: AppSettings,
     SP: StepPathSettings,
-):
+) -> Optional[float]:
     AS = app_settings.amber_settings
     PS = app_settings.path_settings
 
@@ -349,3 +351,5 @@ def run_ld_step(
             stdout=step_ambmask_CA_pdb_f,
             **app_settings.subprocess_settings.__dict__,
         )
+
+    return None # TODO: return RMSD

@@ -31,7 +31,7 @@ def main(
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
         "<level>{level: <8}</level> | "
         "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-        "<level>STEP {extra[step]}</level> | " # TODO: Better formatting
+        "<level>STEP {extra[step]}</level> | "  # TODO: Better formatting
         "<level>{message}</level> | "
         "<level>{extra}</level>"
     )
@@ -41,7 +41,6 @@ def main(
         format=logger_format,
     )
 
-
     step_logger = logger.bind(step=-1)
 
     step_logger.info("Starting ANM-LD python.")
@@ -49,6 +48,12 @@ def main(
 
     PS = app_settings.path_settings
     PS.out_dir = PS.out_dir.absolute()
+
+    if (
+        app_settings.LD_method == "AMBER"
+        and app_settings.anmld_settings.early_stopping_rmsd
+    ):
+        logger.warning("Early stopping is only availible for OpenMM")
 
     app_settings.subprocess_settings.cwd = PS.out_dir
 
@@ -75,11 +80,21 @@ def main(
         total=app_settings.anmld_settings.n_steps,
         desc="Running ANM-LD",
     )
-    mm_min_sim = mm_ld_sim = None
+    mm_min_sim = mm_ld_sim = rmsd = None
     step = 0
     while True:
         if step >= app_settings.anmld_settings.n_steps:
             break
+        elif rmsd and app_settings.anmld_settings.early_stopping_rmsd:
+            if rmsd < app_settings.anmld_settings.early_stopping_rmsd:
+                step_logger.success(
+                    (
+                        f"Early stopping with {rmsd=}, which is below the given"
+                        f"threshold {app_settings.anmld_settings.early_stopping_rmsd}"
+                    )
+                )
+                break
+
         step_logger = logger.bind(step=step)
         ld_logger = step_logger.bind(LD=True)
 
@@ -141,7 +156,7 @@ def main(
                     )
 
         try:
-            run_step(
+            rmsd = run_step(
                 aa_step=aa_step,  # type: ignore
                 aa_target=aa_target,  # type: ignore
                 step=step,
@@ -151,18 +166,20 @@ def main(
                 mm_min_sim=mm_min_sim,
                 mm_ld_sim=mm_ld_sim,
             )
-            new_structure_name = PS.step_path_settings.step_anmld_pdb.format(
-                step=step
-            )
-            aa_step = get_atomarray(PS.out_dir / new_structure_name)
-
-            step += 1
-            pbar.update(1)
         except LDError:
             ld_logger.warning(
                 f"The LD simulation returned an error. Halving the DF value to {app_settings.anmld_settings.DF / 2} and retrying."
             )
             app_settings.anmld_settings.DF /= 2
+            continue
+
+        new_structure_name = PS.step_path_settings.step_anmld_pdb.format(
+            step=step
+        )
+        aa_step = get_atomarray(PS.out_dir / new_structure_name)
+
+        step += 1
+        pbar.update(1)
 
     pbar.close()
 
