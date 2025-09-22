@@ -45,9 +45,14 @@ openmmforcefields = { git = "https://github.com/openmm/openmmforcefields", tag =
 
 [dependency-groups]
 dev = [
+    "ipykernel>=6.30.1",
     "ipython>=9.4.0",
     "prody>=2.6.1",
     "pytest>=8.4.1",
+]
+notebook = [
+    "nglview>=3.1.4",
+    "seaborn>=0.13.2",
 ]
 openmm = [
     "hydride>=1.2.3",
