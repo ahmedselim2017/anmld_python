@@ -9,7 +9,7 @@
 - [ ] Add a flag to overwrite out dir
 - [ ] Log steps information to CSV
 - [ ] mmCIF support
-- [ ] Early stopping
+- [x] Early stopping
 - [x] openMM support
     - [x] first step
     - [x] min.in

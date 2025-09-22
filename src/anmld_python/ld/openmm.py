@@ -198,6 +198,6 @@ def run_ld_step(
         aa=ld_aligned_aa,
         out_path=PS.out_dir / step_paths.step_anmld_pdb,
     )
-    ld_logger.info(f"Finished LD step {ld_rmsd=}")
+    ld_logger.info(f"Finished LD step with {float(ld_rmsd)} RMSD")
 
     return ld_rmsd
