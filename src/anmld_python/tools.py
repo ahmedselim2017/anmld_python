@@ -9,8 +9,22 @@ import numpy as np
 
 from anmld_python.settings import AppSettings
 
+
 class LDError(Exception):
     pass
+
+
+def write_atomarray(aa: AtomArray, out_path: Path):
+    match out_path.suffix:
+        case ".pdb":
+            pdb_file = fastpdb.PDBFile()
+            pdb_file.set_structure(aa)
+            pdb_file.write(out_path)
+        case ".cif":
+            cif_file = b_pdbx.CIFFile()
+            b_pdbx.set_structure(cif_file, aa)
+            cif_file.write(out_path)
+
 
 def get_atomarray(
     structure_path: Path,
@@ -22,27 +36,28 @@ def get_atomarray(
     if not extra_fields:
         extra_fields = []
 
-    if structure_path.suffix == ".pdb":
-        structure_file = fastpdb.PDBFile.read(structure_path)
+    match structure_path.suffix:
+        case ".pdb":
+            structure_file = fastpdb.PDBFile.read(structure_path)
 
-        atomarray = structure_file.get_structure(
-            extra_fields=extra_fields,
-            model=structure_index + 1,
-            *args,
-            **kwargs,
-        )
-    elif structure_path.suffix == ".cif":
-        structure_file = b_pdbx.CIFFile.read(structure_path)
-        atomarray = b_pdbx.get_structure(
-            structure_file,
-            model=structure_index - 1,
-            extra_fields=extra_fields,
-            *args,
-            **kwargs,
-        )
-    else:
-        emsg = f"Given structure file {structure_path} is not supported."
-        raise ValueError(emsg)
+            atomarray = structure_file.get_structure(
+                extra_fields=extra_fields,
+                model=structure_index + 1,
+                *args,
+                **kwargs,
+            )
+        case ".cif":
+            structure_file = b_pdbx.CIFFile.read(structure_path)
+            atomarray = b_pdbx.get_structure(
+                structure_file,
+                model=structure_index - 1,
+                extra_fields=extra_fields,
+                *args,
+                **kwargs,
+            )
+        case _:
+            emsg = f"Given structure file {structure_path} is not supported."
+            raise ValueError(emsg)
 
     return cast(AtomArray, atomarray)
 
@@ -71,6 +86,7 @@ def sanitize_pdb(
             )
         aa = aa[aa.chain_id == chain_id]
     elif chains.size != 1:
+        # TODO: Check for multiple connected components instead of multiple chains
         raise ValueError(
             f"The structure at {in_path} includes multiple chains {chains}. Please select a chain."
         )

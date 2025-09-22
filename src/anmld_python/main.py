@@ -68,7 +68,6 @@ def main(
         out_path=PS.out_dir / PS.sanitized_init_structure,
         app_settings=app_settings,
         chain_id=chain_init,
-        include_bonds=True
     )
     aa_target = sanitize_pdb(
         in_path=path_abs_structure_target.absolute(),
@@ -77,7 +76,9 @@ def main(
         chain_id=chain_target,
     )
 
-    # TODO: check if the initial and target topologies are the same
+    # TODO: A better way?
+    if not (aa_step.res_id == aa_target.res_id).all():
+        raise ValueError("The initial and target structures must have the same residues")
 
     pbar = tqdm(
         total=app_settings.anmld_settings.n_steps,
