@@ -2,10 +2,10 @@ from pathlib import Path
 from typing import Optional, cast
 
 from biotite.structure.atoms import AtomArray
+import biotite.structure as b_structure
+import biotite.structure.io.pdbx as b_pdbx
 import fastpdb
 import numpy as np
-import biotite.structure.io.pdbx as b_pdbx
-import biotite.structure as b_structure
 
 from anmld_python.settings import AppSettings
 
@@ -102,4 +102,5 @@ def sanitize_pdb(
                 out_file,
             )
 
+        aa = get_atomarray(out_path, *args, **kwargs)
     return aa

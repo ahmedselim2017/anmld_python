@@ -19,9 +19,10 @@ from anmld_python.tools import get_atomarray
 
 
 def setup_sims(
-    topology: Topology, app_settings: AppSettings
+    topology: Topology,
+    ld_logger: loguru.Logger,
+    app_settings: AppSettings,
 ) -> tuple[Simulation, Simulation]:
-    # TODO: set platform
     # TODO: set seed if given
 
     # NOTE: AMBER uses solventDielectric=78.5 whereas OpenMM uses
@@ -30,6 +31,15 @@ def setup_sims(
     # NOTE: in LD simulation, ntf is not needed
 
     MS = app_settings.openmm_settings
+
+    try:
+        platform = mm.Platform.getPlatformByName(MS.platform_name)
+    except mm.OpenMMException:
+        ld_logger.warning(
+            f"The given platform {MS.platform_name} is not found. Using CPU as fallback."
+        )
+        platform = mm.Platform.getPlatformByName("CPU")
+
     mm_forcefield = mm_app.ForceField(
         MS.forcefield,
         "implicit/hct.xml",  # AMBER igb=1
@@ -57,6 +67,7 @@ def setup_sims(
         topology=topology,
         system=min_system,
         integrator=min_integrator,
+        platform=platform,
     )
 
     ld_system = mm_forcefield.createSystem(
@@ -76,6 +87,7 @@ def setup_sims(
         topology=topology,
         system=ld_system,
         integrator=ld_integrator,
+        platform=platform,
     )
 
     return min_simulation, ld_simulation
@@ -93,8 +105,8 @@ def run_setup(
 
     aa_temp = get_atomarray(path_init)
 
-    pdb_init = mm_app.PDBFile(str(path_init))  # TODO: get it from biotite
-    pdb_target = mm_app.PDBFile(str(path_target))  # TODO: get it from biotite
+    pdb_init = mm_app.PDBFile(str(path_init))
+    pdb_target = mm_app.PDBFile(str(path_target))
 
     # NOTE: min_sim is assumed to be not used
     ld_logger.debug("Running minimization for the initial structure.")
@@ -103,7 +115,7 @@ def run_setup(
 
     min_init_aa = b_mm.from_context(aa_temp, min_sim.context)
     if MS.save_ld or app_settings.logging_level == "DEBUG":
-        min_init_file = fastpdb.PDBFile()
+        min_init_file = fastpdb.PDBFile() # TODO: write_atomarray function
         min_init_file.set_structure(min_init_aa)
         min_init_file.write(
             app_settings.path_settings.out_dir / PS.openmm_min_init_pdb
@@ -116,12 +128,12 @@ def run_setup(
     min_sim.minimizeEnergy(maxIterations=MS.min_step)
 
     min_target_aa = b_mm.from_context(aa_temp, min_sim.context)
-    if MS.save_ld or app_settings.logging_level == "DEBUG":
-        min_target_file = fastpdb.PDBFile()
-        min_target_file.set_structure(min_target_aa)
-        min_target_file.write(
-            app_settings.path_settings.out_dir / PS.openmm_min_target_pdb
-        )
+
+    min_target_file = fastpdb.PDBFile()
+    min_target_file.set_structure(min_target_aa)
+    min_target_file.write(
+        app_settings.path_settings.out_dir / PS.openmm_min_target_pdb
+    )
 
     ld_logger.debug("Aligning the minimized initial to the minimized target")
     min_aligned_init_aa, _ = b_structure.superimpose(
@@ -152,7 +164,7 @@ def run_ld_step(
     min_sim.context.reinitialize()
     ld_sim.context.reinitialize()
 
-    anm_pdb = mm_app.PDBFile(str(pred_abs_path))  # TODO: get it from biotite
+    anm_pdb = mm_app.PDBFile(str(pred_abs_path))
 
     ld_logger.debug("Running minimization")
     min_sim.context.setPositions(anm_pdb.positions)

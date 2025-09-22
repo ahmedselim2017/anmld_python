@@ -77,8 +77,6 @@ def calc_modes(
         (N_nodes, mode_max) X-eigenvalues array
         (N_nodes, mode_max) Y-eigenvalues array
         (N_nodes, mode_max) Z-eigenvalues array
-
-        TODO: do we need to return all these arrays?
     """
     W, V = jnp.linalg.eigh(hessian)
 

@@ -55,7 +55,7 @@ class StepPathSettings(BaseSettings):
 
 
 class PathSettings(BaseSettings):
-    out_dir: NewPath = Field(Path("out_openmm")) # TODO: doesn't work
+    out_dir: Path = Field(Path("out_openmm"))
 
     sanitized_init_structure: str = "sanitized_init.pdb"
     sanitized_target_structure: str = "sanitized_target.pdb"
@@ -101,7 +101,7 @@ class PathSettings(BaseSettings):
 
 
 class AmberSettings(BaseSettings):
-    temp: PositiveFloat = Field(310)  # TODO: float or int?
+    temp: PositiveFloat = Field(310)
     min_step: PositiveInt = Field(500)
     ld_step: PositiveInt = Field(100)
     forcefield: str = Field("leaprc.protein.ff14SB")
@@ -112,8 +112,13 @@ class OpenMMSettings(BaseSettings):
     min_step: PositiveInt = Field(500)
     ld_step: PositiveInt = Field(100)
     ld_temp: PositiveFloat = Field(310)
+
     save_min: bool = False
     save_ld: bool = False
+
+    platform_name: Literal["CPU", "OpenCL", "CUDA", "HIP"] = Field(
+        "CUDA", alias="platform"
+    )
 
 
 class ANMLDSettings(BaseSettings):

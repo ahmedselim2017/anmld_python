@@ -25,19 +25,19 @@ def main(
     with open(settings_path, "rb") as settings_f:
         app_settings = AppSettings(**tomllib.load(settings_f))
 
-    # TODO: set logger level
     logger.remove()
     logger_format = (
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
         "<level>{level: <8}</level> | "
+        "<level>STEP {extra[step]: <4}</level> | "
         "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-        "<level>STEP {extra[step]}</level> | "  # TODO: Better formatting
         "<level>{message}</level> | "
         "<level>{extra}</level>"
     )
     logger.add(
         lambda msg: tqdm.write(msg, end=""),
         colorize=True,
+        level=app_settings.logging_level,
         format=logger_format,
     )
 
@@ -68,6 +68,7 @@ def main(
         out_path=PS.out_dir / PS.sanitized_init_structure,
         app_settings=app_settings,
         chain_id=chain_init,
+        include_bonds=True
     )
     aa_target = sanitize_pdb(
         in_path=path_abs_structure_target.absolute(),
@@ -75,6 +76,8 @@ def main(
         app_settings=app_settings,
         chain_id=chain_target,
     )
+
+    # TODO: check if the initial and target topologies are the same
 
     pbar = tqdm(
         total=app_settings.anmld_settings.n_steps,
@@ -102,20 +105,20 @@ def main(
 
         if step == 0:
             match app_settings.LD_method:
-                case "OpenMM":  # TODO: Convert AMBER setup to openMM
+                case "OpenMM":
                     from anmld_python.ld.openmm import run_setup, setup_sims
                     import openmm.app as mm_app
 
                     anm_pdb = mm_app.PDBFile(
                         str(PS.out_dir / PS.sanitized_init_structure)
-                    )  # TODO: get it from biotite
+                    )  # INFO: fastpdb can't load bondlist so load file with openmm
 
                     mm_min_sim, mm_ld_sim = setup_sims(
                         topology=anm_pdb.topology,
+                        ld_logger=ld_logger,
                         app_settings=app_settings,
                     )
 
-                    # TODO: paths
                     run_setup(
                         path_init=PS.out_dir / PS.sanitized_init_structure,
                         path_target=PS.out_dir / PS.sanitized_target_structure,
@@ -138,7 +141,6 @@ def main(
                     )
 
                     resnum = np.unique(aa_step.res_id).size  # type: ignore
-                    # TODO: Paths
                     run_setup(
                         path_abs_init=PS.out_dir / PS.sanitized_init_structure,
                         path_abs_target=PS.out_dir
