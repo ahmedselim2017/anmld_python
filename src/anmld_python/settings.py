@@ -136,7 +136,7 @@ class AppSettings(BaseSettings):
     logging_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = (
         "DEBUG"
     )
-    mode_selection: Literal["MATLAB"] = "MATLAB"
+    mode_selection: Literal["ORIGINAL"] = "ORIGINAL"
     LD_method: Literal["AMBER", "OpenMM"] = "OpenMM"
 
     anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")   # type: ignore

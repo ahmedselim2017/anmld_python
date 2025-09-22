@@ -50,10 +50,10 @@ def run_step(
         mode_selection=mode_selection,
     )
     match mode_selection:
-        case "MATLAB":
-            import anmld_python.mode_selection.matlab_select as matlab_select
+        case "ORIGINAL":
+            from anmld_python.mode_selection.original_select import generate_structures
 
-            pred_aa = matlab_select.generate_structures(
+            pred_aa = generate_structures(
                 aa_step=aa_step,
                 aa_target=aa_target,
                 Vx_step=Vx_step,

@@ -12,7 +12,7 @@ from anmld_python.tools import get_CAs
 
 
 @jax.jit
-def matlab_select(
+def select_modes(
     ca_coords_step: jax.Array,
     ca_coords_target: jax.Array,
     Vx_step: jax.Array,
@@ -76,7 +76,7 @@ def generate_structures(
     ca_step = get_CAs(aa_step)
     ca_target = get_CAs(aa_target)
 
-    sel_mode_idx, sel_mode_cos_sim = matlab_select(
+    sel_mode_idx, sel_mode_cos_sim = select_modes(
         ca_coords_step=ca_step.coord,
         ca_coords_target=ca_target.coord,
         Vx_step=Vx_step,

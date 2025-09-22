@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional, cast
 
+from loguru import logger
 from biotite.structure.atoms import AtomArray
 import biotite.structure as b_structure
 import biotite.structure.io.pdbx as b_pdbx
@@ -52,6 +53,7 @@ def get_atomarray(
                     **kwargs,
                 )
             except BaseException:
+                logger.warning("fastpdb panicked while loading the structure, using biotite to load the structure.")
                 structure_file = b_pdb.PDBFile.read(structure_path)
                 atomarray = structure_file.get_structure(
                     extra_fields=extra_fields,
