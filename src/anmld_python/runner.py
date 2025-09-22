@@ -7,8 +7,9 @@ import loguru
 import numpy as np
 
 from anmld_python.settings import AppSettings
-from anmld_python.tools import LDError, get_CAs
+from anmld_python.tools import LDError, NonConnectedStructureError, get_CAs
 import anmld_python.anm as ANM
+
 
 def run_step(
     aa_step: AtomArray,
@@ -18,7 +19,7 @@ def run_step(
     ld_logger: loguru.Logger,
     app_settings: AppSettings,
     mm_min_sim: Optional[Any] = None,
-    mm_ld_sim: Optional[Any] = None
+    mm_ld_sim: Optional[Any] = None,
 ) -> Optional[float]:
     PS = app_settings.path_settings
     SP = app_settings.path_settings.step_path_settings.format_step(step)
@@ -31,11 +32,16 @@ def run_step(
         gamma=app_settings.anmld_settings.gamma_ANM,
     )
     step_logger.debug("Calculated the Hessian matrix")
-    _, _, Vx_step, Vy_step, Vz_step = ANM.calc_modes(
+    W, _, Vx_step, Vy_step, Vz_step = ANM.calc_modes(
         hessian=hessian_step,
         mode_max=app_settings.anmld_settings.max_mode,
     )
     step_logger.debug("Calculated ANM modes")
+
+    if np.any(np.allclose(W, 0)):
+        raise NonConnectedStructureError(
+            "The given initial structure is not fully connected"
+        )
 
     mode_selection = app_settings.mode_selection
 
@@ -69,7 +75,7 @@ def run_step(
             from anmld_python.ld.openmm import run_ld_step
             from openmm import OpenMMException
             from scipy.linalg import LinAlgError
-            
+
             if mm_min_sim is None or mm_ld_sim is None:
                 raise ValueError("mm_min_sim and mm_ld_sim must not be None.")
 
@@ -78,8 +84,8 @@ def run_step(
                     aa_anm=pred_aa,
                     aa_target=aa_target,
                     pred_abs_path=pred_abs_path,
-                    min_sim = mm_min_sim,
-                    ld_sim = mm_ld_sim,
+                    min_sim=mm_min_sim,
+                    ld_sim=mm_ld_sim,
                     ld_logger=ld_logger,
                     app_settings=app_settings,
                     step_paths=SP,

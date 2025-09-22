@@ -11,7 +11,12 @@ import typer
 
 from anmld_python.runner import run_step
 from anmld_python.settings import AppSettings
-from anmld_python.tools import LDError, get_atomarray, sanitize_pdb
+from anmld_python.tools import (
+    LDError,
+    NonConnectedStructureError,
+    get_atomarray,
+    sanitize_pdb,
+)
 
 
 @logger.catch(reraise=True)
@@ -19,8 +24,8 @@ def main(
     settings_path: Path,
     path_abs_structure_init: Path,
     path_abs_structure_target: Path,
-    chain_init: Optional[str] = None,
-    chain_target: Optional[str] = None,
+    chain_init: Optional[list[str]] = None,
+    chain_target: Optional[list[str]] = None,
 ):
     with open(settings_path, "rb") as settings_f:
         app_settings = AppSettings(**tomllib.load(settings_f))
@@ -34,6 +39,7 @@ def main(
         "<level>{message}</level> | "
         "<level>{extra}</level>"
     )
+    logger.configure(extra={"step": -1})
     logger.add(
         lambda msg: tqdm.write(msg, end=""),
         colorize=True,
@@ -63,22 +69,26 @@ def main(
     step_logger.add(PS.out_dir / "anmld.log", serialize=True)
 
     step_logger.info("Sanitizing the initial and target structures")
+    print(path_abs_structure_init.absolute())
     aa_step = sanitize_pdb(
         in_path=path_abs_structure_init.absolute(),
         out_path=PS.out_dir / PS.sanitized_init_structure,
         app_settings=app_settings,
-        chain_id=chain_init,
+        sel_chains=chain_init,
+        include_bonds=True
     )
     aa_target = sanitize_pdb(
         in_path=path_abs_structure_target.absolute(),
         out_path=PS.out_dir / PS.sanitized_target_structure,
         app_settings=app_settings,
-        chain_id=chain_target,
+        sel_chains=chain_target,
+        include_bonds=True
     )
 
-    # TODO: A better way?
-    if not (aa_step.res_id == aa_target.res_id).all():
-        raise ValueError("The initial and target structures must have the same residues")
+    if aa_step.bonds.as_set() != aa_target.bonds.as_set():
+        raise ValueError(
+            "The initial and target structures must have the same topology"
+        )
 
     pbar = tqdm(
         total=app_settings.anmld_settings.n_steps,
@@ -169,9 +179,21 @@ def main(
                 mm_min_sim=mm_min_sim,
                 mm_ld_sim=mm_ld_sim,
             )
+        except NonConnectedStructureError:
+            if step == 0:
+                raise ValueError(
+                    "The given initial structure is not fully connected"
+                )
+            else:
+                ld_logger.warning(
+                    f"ANM deformation produced a non-connected structure. Halving the DF value to {app_settings.anmld_settings.DF / 2} and restarting the step"
+                )
+                app_settings.anmld_settings.DF /= 2
+                continue
+
         except LDError:
             ld_logger.warning(
-                f"The LD simulation returned an error. Halving the DF value to {app_settings.anmld_settings.DF / 2} and retrying."
+                f"The LD simulation returned an error. Halving the DF value to {app_settings.anmld_settings.DF / 2} and restarting the step"
             )
             app_settings.anmld_settings.DF /= 2
             continue

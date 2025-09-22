@@ -4,6 +4,7 @@ from typing import Optional, cast
 from biotite.structure.atoms import AtomArray
 import biotite.structure as b_structure
 import biotite.structure.io.pdbx as b_pdbx
+import biotite.structure.io.pdb as b_pdb
 import fastpdb
 import numpy as np
 
@@ -13,6 +14,8 @@ from anmld_python.settings import AppSettings
 class LDError(Exception):
     pass
 
+class NonConnectedStructureError(Exception):
+    pass
 
 def write_atomarray(aa: AtomArray, out_path: Path):
     match out_path.suffix:
@@ -38,14 +41,24 @@ def get_atomarray(
 
     match structure_path.suffix:
         case ".pdb":
-            structure_file = fastpdb.PDBFile.read(structure_path)
-
-            atomarray = structure_file.get_structure(
-                extra_fields=extra_fields,
-                model=structure_index + 1,
-                *args,
-                **kwargs,
-            )
+            # fastpdb might panic while loading bonds
+            # https://github.com/biotite-dev/fastpdb/pull/25
+            try:
+                structure_file = fastpdb.PDBFile.read(structure_path)
+                atomarray = structure_file.get_structure(
+                    extra_fields=extra_fields,
+                    model=structure_index + 1,
+                    *args,
+                    **kwargs,
+                )
+            except BaseException:
+                structure_file = b_pdb.PDBFile.read(structure_path)
+                atomarray = structure_file.get_structure(
+                    extra_fields=extra_fields,
+                    model=structure_index + 1,
+                    *args,
+                    **kwargs,
+                )
         case ".cif":
             structure_file = b_pdbx.CIFFile.read(structure_path)
             atomarray = b_pdbx.get_structure(
@@ -72,24 +85,19 @@ def sanitize_pdb(
     in_path: Path,
     out_path: Path,
     app_settings: AppSettings,
-    chain_id: Optional[str] = None,
+    sel_chains: Optional[list[str]] = None,
     *args,
     **kwargs,
 ) -> AtomArray:
     aa = get_atomarray(in_path, *args, **kwargs)
 
     chains = np.unique(aa.chain_id)
-    if chain_id:
-        if chain_id not in chains:
+    if sel_chains:
+        if not np.all(np.isin(sel_chains, chains)):
             raise ValueError(
-                f"The given {chain_id=} does not exists in the structure at {in_path.absolute()}."
+                f"The given {sel_chains=} does not exists in the structure at {in_path.absolute()}."
             )
-        aa = aa[aa.chain_id == chain_id]
-    elif chains.size != 1:
-        # TODO: Check for multiple connected components instead of multiple chains
-        raise ValueError(
-            f"The structure at {in_path} includes multiple chains {chains}. Please select a chain."
-        )
+        aa = aa[np.isin(aa.chain_id, sel_chains)]
 
     # NOTE: other filters?
     aa = aa[b_structure.filter_amino_acids(aa)]
