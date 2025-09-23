@@ -42,14 +42,15 @@ class StepPathSettings(BaseSettings):
     step_anmld_pdb: str = "STEP_{step}_ANMLD.pdb"
     step_anmld_CA_pdb: str = "STEP_{step}_ANMLD_CA.pdb"
 
-
-    def format_step(self, step: int):
+    def format_step(self, step: int, n_maxdigit: int):
         dump = self.model_dump()
         f_annot = {}
         for key in dump:
             f_annot[key] = getattr(self, key)
             if isinstance(getattr(self, key), str):
-                f_annot[key] = getattr(self, key).format(step=step)
+                f_annot[key] = getattr(self, key).format(
+                    step=f"{step:0{n_maxdigit}}"
+                )
 
         return StepPathSettings(**f_annot)
 

@@ -69,12 +69,17 @@ def run_cycle(app_settings: AppSettings):
 
     cycle_info = []
     while True:
-        step_logger = logger.bind(step=step)
-        ld_logger = step_logger.bind(LD=True)
         if step >= app_settings.anmld_settings.n_steps:
             break
 
+        step_logger = logger.bind(step=step)
+        ld_logger = step_logger.bind(LD=True)
         step_logger.debug("Starting step")
+
+        step_paths = PS.step_path_settings.format_step(
+            step=step,
+            n_maxdigit=len(str(app_settings.anmld_settings.n_steps)),
+        )
 
         if step == 0:
             match app_settings.LD_method:
@@ -134,9 +139,9 @@ def run_cycle(app_settings: AppSettings):
             step_info = run_step(
                 aa_step=aa_step,  # type: ignore
                 aa_target=aa_target,  # type: ignore
-                step=step,
                 step_logger=step_logger,
                 ld_logger=ld_logger,
+                step_paths=step_paths,
                 app_settings=app_settings,
                 mm_min_sim=mm_min_sim,
                 mm_ld_sim=mm_ld_sim,
@@ -160,8 +165,7 @@ def run_cycle(app_settings: AppSettings):
             app_settings.anmld_settings.DF /= 2
             continue
 
-        new_name = PS.step_path_settings.step_anmld_pdb.format(step=step)
-        aa_step = get_atomarray(PS.out_dir / new_name)
+        aa_step = get_atomarray(PS.out_dir / step_paths.step_anmld_pdb)
 
         step_info["step"] = step
 
@@ -187,7 +191,7 @@ def run_cycle(app_settings: AppSettings):
     return cycle_info
 
 
-@logger.catch(reraise=True)
+@logger.catch()
 def main(
     settings_path: Path,
     path_abs_structure_init: Path,
@@ -230,4 +234,6 @@ def main(
 
 
 if __name__ == "__main__":
-    typer.run(main)
+    app = typer.Typer()
+    app.command()(main)
+    app(standalone_mode=False)

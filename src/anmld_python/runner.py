@@ -6,7 +6,7 @@ import fastpdb
 import loguru
 import numpy as np
 
-from anmld_python.settings import AppSettings
+from anmld_python.settings import AppSettings, StepPathSettings
 from anmld_python.tools import LDError, NonConnectedStructureError, get_CAs
 import anmld_python.anm as ANM
 
@@ -14,15 +14,14 @@ import anmld_python.anm as ANM
 def run_step(
     aa_step: AtomArray,
     aa_target: AtomArray,
-    step: int,
     step_logger: loguru.Logger,
     ld_logger: loguru.Logger,
+    step_paths: StepPathSettings,
     app_settings: AppSettings,
     mm_min_sim: Optional[Any] = None,
     mm_ld_sim: Optional[Any] = None,
 ) -> dict:
     PS = app_settings.path_settings
-    SP = app_settings.path_settings.step_path_settings.format_step(step)
 
     ca_step = get_CAs(aa_step)
 
@@ -65,7 +64,7 @@ def run_step(
                 app_settings=app_settings,
             )
 
-    pred_abs_path = PS.out_dir / SP.step_anm_pdb
+    pred_abs_path = PS.out_dir / step_paths.step_anm_pdb
 
     pred_file = fastpdb.PDBFile()
     pred_file.set_structure(pred_aa)
@@ -90,7 +89,7 @@ def run_step(
                     ld_sim=mm_ld_sim,
                     ld_logger=ld_logger,
                     app_settings=app_settings,
-                    step_paths=SP,
+                    step_paths=step_paths,
                 )
             except (OpenMMException, LinAlgError):
                 raise LDError
@@ -105,11 +104,8 @@ def run_step(
                     resnum=resnum,
                     ld_logger=ld_logger,
                     app_settings=app_settings,
-                    SP=SP,
+                    SP=step_paths,
                 )
             except CalledProcessError:
                 raise LDError
-    return {
-        "rmsd": rmsd,
-        "selection": sel_info
-    }
+    return {"rmsd": rmsd, "selection": sel_info}
