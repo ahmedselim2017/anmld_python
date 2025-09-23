@@ -40,10 +40,16 @@ notebook = [
     { name = "seaborn", marker = "sys_platform == 'linux'" },
 ]
 openmm = [
-    { name = "hydride", marker = "sys_platform == 'linux'" },
+    { name = "openmm", marker = "sys_platform == 'linux'" },
+    { name = "openmmforcefields", marker = "sys_platform == 'linux'" },
+]
+openmm-cuda = [
     { name = "openmm", marker = "sys_platform == 'linux'" },
     { name = "openmm-cuda-12", marker = "sys_platform == 'linux'" },
-    { name = "openmmforcefields", marker = "sys_platform == 'linux'" },
+]
+openmm-hip = [
+    { name = "openmm", marker = "sys_platform == 'linux'" },
+    { name = "openmm-hip-6", marker = "sys_platform == 'linux'" },
 ]
 
 [package.metadata]
@@ -73,10 +79,16 @@ notebook = [
     { name = "seaborn", specifier = ">=0.13.2" },
 ]
 openmm = [
-    { name = "hydride", specifier = ">=1.2.3" },
+    { name = "openmm", specifier = ">=8.3.1" },
+    { name = "openmmforcefields", git = "https://github.com/openmm/openmmforcefields?tag=0.15.0" },
+]
+openmm-cuda = [
     { name = "openmm", extras = ["cuda12"], specifier = ">=8.3.1" },
     { name = "openmm-cuda-12", specifier = ">=8.3.1" },
-    { name = "openmmforcefields", git = "https://github.com/openmm/openmmforcefields?tag=0.15.0" },
+]
+openmm-hip = [
+    { name = "openmm", extras = ["hip6"], specifier = ">=8.3.1" },
+    { name = "openmm-hip-6", specifier = ">=8.3.1" },
 ]
 
 [[package]]
@@ -537,19 +549,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b1/df/48c586a5fe32a0f01324ee087459e112ebb7224f646c0b5023f5e79e9956/httpx-0.28.1.tar.gz", hash = "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc", size = 141406, upload-time = "2024-12-06T15:37:23.222Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad", size = 73517, upload-time = "2024-12-06T15:37:21.509Z" },
-]
-
-[[package]]
-name = "hydride"
-version = "1.2.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "biotite", marker = "sys_platform == 'linux'" },
-    { name = "numpy", marker = "sys_platform == 'linux'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/63/a2/d600d62ea1f551002503066576cd45a7bc478da1acdc44c8796d5b05dc19/hydride-1.2.3.tar.gz", hash = "sha256:d1d06dcfb4c4957f109bd2445a115021cf69ff7c1639cb3f96961c58b38c6453", size = 293435, upload-time = "2024-11-04T11:37:06.648Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/d4/7ca768b20e6d62ee0c967c3e770ca9bf720b396f03111ccaf230e94a023c/hydride-1.2.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:76ecdf1cebe6042549fa4580ee829670c472563a8b66b25cb74c48d4e0f1e2d2", size = 1186352, upload-time = "2024-11-04T11:37:04.144Z" },
 ]
 
 [[package]]
@@ -1482,6 +1481,14 @@ dependencies = [
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8d/05/473b1efad35ec076303bb94c8df349d7dac0451730c8931a05a79d65b64b/openmm_cuda_12-8.3.1-py3-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b4923ba4c1cbe8a97df676b5d05ff5a0f570c94a01400dfeaef4ac4a7507de8f", size = 2144742, upload-time = "2025-07-19T00:27:31.212Z" },
+]
+
+[[package]]
+name = "openmm-hip-6"
+version = "8.3.1"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/b2/503bf7667153181cad3cdf6d9702ebc9e9f8d916285b9ea3ec41c2658295/openmm_hip_6-8.3.1-py3-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:581b9bf52e6b4c194210139b187ee43b4b98dd472a525b5acf4d11ba6805e618", size = 2429225, upload-time = "2025-07-19T00:27:35.469Z" },
 ]
 
 [[package]]

@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.scripts]
-anmld-python = "anmld_python:main"
+anmld-python = "anmld_python.main:cli"
 
 [build-system]
 requires = ["uv_build>=0.8.3,<0.9.0"]
@@ -31,10 +31,6 @@ build-backend = "uv_build"
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
-
-[tool.ruff]
-# Allow lines to be as long as 120.
-line-length = 80
 
 [tool.uv]
 environments = [
@@ -56,8 +52,14 @@ notebook = [
     "seaborn>=0.13.2",
 ]
 openmm = [
-    "hydride>=1.2.3",
+    "openmm>=8.3.1",
+    "openmmforcefields",
+]
+openmm-cuda = [
     "openmm-cuda-12>=8.3.1",
     "openmm[cuda12]>=8.3.1",
-    "openmmforcefields",
+]
+openmm-hip = [
+    "openmm-hip-6>=8.3.1",
+    "openmm[hip6]>=8.3.1",
 ]

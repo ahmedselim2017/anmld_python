@@ -232,8 +232,10 @@ def main(
 
     run_cycle(app_settings=app_settings)
 
-
-if __name__ == "__main__":
+def cli():
     app = typer.Typer()
     app.command()(main)
     app(standalone_mode=False)
+
+if __name__ == "__main__":
+    cli()
