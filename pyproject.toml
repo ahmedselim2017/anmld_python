@@ -40,7 +40,7 @@ environments = [
 [tool.uv.sources]
 openmmforcefields = { git = "https://github.com/openmm/openmmforcefields", tag = "0.15.0" }
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "ipykernel>=6.30.1",
     "ipython>=9.4.0",
