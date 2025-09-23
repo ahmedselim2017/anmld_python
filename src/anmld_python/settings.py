@@ -107,7 +107,9 @@ class AmberSettings(BaseSettings):
     min_step: PositiveInt = Field(500)
     ld_step: PositiveInt = Field(100)
     forcefield: str = Field("leaprc.protein.ff14SB")
-    cmd_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
+    pmemd_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
+    pmemd_cmd: str = "pmemd.cuda"
+    ambertools_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
 
 class OpenMMSettings(BaseSettings):
     forcefield : str = Field("amber14/protein.ff14SB.xml")

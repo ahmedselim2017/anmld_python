@@ -96,14 +96,14 @@ def run_setup(
 
     cmd_tleap = f'tleap -f "{PS.out_dir / PS.amber_tleap_init_in}"'
     ld_logger.info("Running tleap")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_tleap)
+    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_tleap)
     subprocess.run(
-        AS.cmd_prefix + cmd_tleap,
+        AS.ambertools_prefix + cmd_tleap,
         **app_settings.subprocess_settings.__dict__,
     )
 
     cmd_amber_initial = dedent(f"""\
-                            $AMBERHOME/bin/pmemd.cuda -O                        \\
+                            $AMBERHOME/bin/{AS.pmemd_cmd} -O                        \\
                                 -i "{PS.out_dir / PS.amber_min_in}"             \\
                                 -p "{PS.out_dir / PS.amber_pdb_init_top}"       \\
                                 -c "{PS.out_dir / PS.amber_pdb_init_coord}"     \\
@@ -112,7 +112,7 @@ def run_setup(
                                 -r "{PS.out_dir / PS.amber_pdb_init_min_rst}"   \\
                                 </dev/null""")
     cmd_amber_target = dedent(f"""\
-                            $AMBERHOME/bin/pmemd.cuda -O                            \\
+                            $AMBERHOME/bin/{AS.pmemd_cmd} -O                            \\
                                 -i "{PS.out_dir / PS.amber_min_in}"                 \\
                                 -p "{PS.out_dir / PS.amber_pdb_target_top}"         \\
                                 -c "{PS.out_dir / PS.amber_pdb_target_coord}"       \\
@@ -121,16 +121,16 @@ def run_setup(
                                 -r "{PS.out_dir / PS.amber_pdb_target_min_rst}"     \\
                                 </dev/null""")
     ld_logger.info("Running pmemd min for the initial structure")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_amber_initial)
+    ld_logger.debug("Running {cmd}", cmd=AS.pmemd_prefix + cmd_amber_initial)
     subprocess.run(
-        AS.cmd_prefix + cmd_amber_initial,
+        AS.pmemd_prefix + cmd_amber_initial,
         **app_settings.subprocess_settings.__dict__,
     )
 
     ld_logger.info("Running pmemd min for the target structure")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_amber_target)
+    ld_logger.debug("Running {cmd}", cmd=AS.pmemd_prefix + cmd_amber_target)
     subprocess.run(
-        AS.cmd_prefix + cmd_amber_target,
+        AS.pmemd_prefix + cmd_amber_target,
         **app_settings.subprocess_settings.__dict__,
     )
 
@@ -155,9 +155,9 @@ def run_setup(
                                 "{PS.out_dir / PS.amber_pdb_init_top}"  \\
                                 "{PS.out_dir / PS.amber_ptraj_rewrite_init_in}\"""")
     ld_logger.info("Running cpptraj")
-    ld_logger.debug("Ran {cmd}", cmd=AS.cmd_prefix + cmd_rewrite)
+    ld_logger.debug("Ran {cmd}", cmd=AS.ambertools_prefix + cmd_rewrite)
     subprocess.run(
-        AS.cmd_prefix + cmd_rewrite,
+        AS.ambertools_prefix + cmd_rewrite,
         **app_settings.subprocess_settings.__dict__,
     )
 
@@ -185,9 +185,9 @@ def run_setup(
                             "{PS.out_dir / PS.amber_pdb_target_top}"    \\
                             "{PS.out_dir / PS.amber_ptraj_align_target2initial_in}\"""")
     ld_logger.info("Running cpptraj")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_align)
+    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_align)
     subprocess.run(
-        AS.cmd_prefix + cmd_align,
+        AS.ambertools_prefix + cmd_align,
         **app_settings.subprocess_settings.__dict__,
     )
 
@@ -197,20 +197,20 @@ def run_setup(
                 -c "{PS.amber_pdb_rewrite_init_min_rst}"    \\
                 -prnlev 1 -out pdb""")
     ld_logger.info("Running ambmask (initial AA)")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_AA_init)
+    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_AA_init)
     with open(PS.out_dir / PS.amber_pdb_initial_min_pdb, "w") as out_f:
         subprocess.run(
-            AS.cmd_prefix + cmd_AA_init,
+            AS.ambertools_prefix + cmd_AA_init,
             stdout=out_f,
             **app_settings.subprocess_settings.__dict__,
         )
 
     cmd_CA_init = cmd_AA_init + " -find @CA"
     ld_logger.info("Running ambmask (initial CA)")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_CA_init)
+    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_CA_init)
     with open(PS.out_dir / PS.amber_pdb_initial_min_c_pdb, "w") as out_f:
         subprocess.run(
-            AS.cmd_prefix + cmd_CA_init,
+            AS.ambertools_prefix + cmd_CA_init,
             stdout=out_f,
             **app_settings.subprocess_settings.__dict__,
         )
@@ -220,20 +220,20 @@ def run_setup(
                 -c "{PS.amber_target_min_algn}"     \\
                 -prnlev 1 -out pdb""")
     ld_logger.info("Running ambmask (target AA)")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_AA_target)
+    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_AA_target)
     with open(PS.out_dir / PS.amber_pdb_target_min_pdb, "w") as out_f:
         subprocess.run(
-            AS.cmd_prefix + cmd_AA_target,
+            AS.ambertools_prefix + cmd_AA_target,
             stdout=out_f,
             **app_settings.subprocess_settings.__dict__,
         )
 
     cmd_CA_target = cmd_AA_target + " -find @CA"
     ld_logger.info("Running ambmask (target CA)")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_CA_target)
+    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_CA_target)
     with open(PS.out_dir / PS.amber_pdb_target_min_c_pdb, "w") as out_f:
         subprocess.run(
-            AS.cmd_prefix + cmd_CA_target,
+            AS.ambertools_prefix + cmd_CA_target,
             stdout=out_f,
             **app_settings.subprocess_settings.__dict__,
         )
@@ -264,14 +264,14 @@ def run_ld_step(
 
     cmd_tleap = f'tleap -f "{amber_tleap_step_in_path}"'
     ld_logger.info("Running tleap")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_tleap)
+    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_tleap)
     subprocess.run(
-        AS.cmd_prefix + cmd_tleap,
+        AS.ambertools_prefix + cmd_tleap,
         **app_settings.subprocess_settings.__dict__,
     )
 
     cmd_min = dedent(f"""\
-                    $AMBERHOME/bin/pmemd.cuda -O                    \\
+                    $AMBERHOME/bin/{AS.pmemd_cmd} -O                    \\
                         -i "{PS.out_dir / PS.amber_min_in}"         \\
                         -p "{PS.out_dir / SP.step_amber_top}"       \\
                         -c "{PS.out_dir / SP.step_amber_coord}"     \\
@@ -280,14 +280,14 @@ def run_ld_step(
                         -r "{PS.out_dir / SP.step_amber_min_rst}"   \\
                         </dev/null""")
     ld_logger.info("Running pmemd min")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_min)
+    ld_logger.debug("Running {cmd}", cmd=AS.pmemd_prefix + cmd_min)
     subprocess.run(
-        AS.cmd_prefix + cmd_min,
+        AS.pmemd_prefix + cmd_min,
         **app_settings.subprocess_settings.__dict__,
     )
 
     cmd_sim = dedent(f"""\
-                    $AMBERHOME/bin/pmemd.cuda -O                        \\
+                    $AMBERHOME/bin/{AS.pmemd_cmd} -O                        \\
                         -i "{PS.out_dir / PS.amber_sim_in}"             \\
                         -p "{PS.out_dir / SP.step_amber_top}"           \\
                         -c "{PS.out_dir / SP.step_amber_min_rst}"       \\
@@ -297,9 +297,9 @@ def run_ld_step(
                         -r "{PS.out_dir / SP.step_amber_sim_restart}"   \\
                         </dev/null""")
     ld_logger.info("Running pmemd sim")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_sim)
+    ld_logger.debug("Running {cmd}", cmd=AS.pmemd_prefix + cmd_sim)
     subprocess.run(
-        AS.cmd_prefix + cmd_sim,
+        AS.pmemd_prefix + cmd_sim,
         **app_settings.subprocess_settings.__dict__,
     )
 
@@ -323,9 +323,9 @@ def run_ld_step(
 
     cmd_align = f'cpptraj "{PS.out_dir / SP.step_amber_top}" "{PS.out_dir / SP.step_amber_ptraj_align_in}"'
     ld_logger.info("Running cpptraj")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_align)
+    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_align)
     subprocess.run(
-        AS.cmd_prefix + cmd_align,
+        AS.ambertools_prefix + cmd_align,
         **app_settings.subprocess_settings.__dict__,
     )
 
@@ -335,20 +335,20 @@ def run_ld_step(
                         -prnlev 1 -out pdb""")
 
     ld_logger.info("Running ambmask AA")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_AA)
+    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_ambmask_AA)
     with open(PS.out_dir / SP.step_anmld_pdb, "w") as step_ambmask_AA_pdb_f:
         subprocess.run(
-            AS.cmd_prefix + cmd_ambmask_AA,
+            AS.ambertools_prefix + cmd_ambmask_AA,
             stdout=step_ambmask_AA_pdb_f,
             **app_settings.subprocess_settings.__dict__,
         )
 
     cmd_ambmask_CA = cmd_ambmask_AA + " -find @CA"
     ld_logger.info("Running ambmask CA")
-    ld_logger.debug("Running {cmd}", cmd=AS.cmd_prefix + cmd_ambmask_CA)
+    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_ambmask_CA)
     with open(PS.out_dir / SP.step_anmld_CA_pdb, "w") as step_ambmask_CA_pdb_f:
         subprocess.run(
-            AS.cmd_prefix + cmd_ambmask_CA,
+            AS.ambertools_prefix + cmd_ambmask_CA,
             stdout=step_ambmask_CA_pdb_f,
             **app_settings.subprocess_settings.__dict__,
         )
