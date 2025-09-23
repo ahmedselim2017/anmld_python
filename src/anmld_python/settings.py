@@ -56,6 +56,7 @@ class StepPathSettings(BaseSettings):
 
 class PathSettings(BaseSettings):
     out_dir: Path = Field(Path("out_openmm"))
+    info_csv: Path = Field(Path("run_info.csv"))
 
     sanitized_init_structure: str = "sanitized_init.pdb"
     sanitized_target_structure: str = "sanitized_target.pdb"

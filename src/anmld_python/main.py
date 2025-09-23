@@ -8,6 +8,7 @@ import tomllib
 from tqdm import tqdm
 import numpy as np
 import typer
+import pandas as pd
 
 from anmld_python.runner import run_step
 from anmld_python.settings import AppSettings
@@ -63,23 +64,15 @@ def run_cycle(app_settings: AppSettings):
         total=app_settings.anmld_settings.n_steps,
         desc="Running ANM-LD",
     )
-    mm_min_sim = mm_ld_sim = rmsd = None
+    mm_min_sim = mm_ld_sim = None
     step = 0
 
+    cycle_info = []
     while True:
         step_logger = logger.bind(step=step)
         ld_logger = step_logger.bind(LD=True)
         if step >= app_settings.anmld_settings.n_steps:
             break
-        elif rmsd and app_settings.anmld_settings.early_stopping_rmsd:
-            if rmsd < app_settings.anmld_settings.early_stopping_rmsd:
-                step_logger.success(
-                    (
-                        f"Early stopping with {float(rmsd)} RMSD, which is below the given"
-                        f"threshold {app_settings.anmld_settings.early_stopping_rmsd}"
-                    )
-                )
-                break
 
         step_logger.debug("Starting step")
 
@@ -138,7 +131,7 @@ def run_cycle(app_settings: AppSettings):
                     )
 
         try:
-            rmsd = run_step(
+            step_info = run_step(
                 aa_step=aa_step,  # type: ignore
                 aa_target=aa_target,  # type: ignore
                 step=step,
@@ -170,10 +163,28 @@ def run_cycle(app_settings: AppSettings):
         new_name = PS.step_path_settings.step_anmld_pdb.format(step=step)
         aa_step = get_atomarray(PS.out_dir / new_name)
 
+        step_info["step"] = step
+
+        if step_info["rmsd"] < app_settings.anmld_settings.early_stopping_rmsd:
+            step_logger.success(
+                (
+                    f"Early stopping with {float(step_info['rmsd'])} RMSD ",
+                    "which is below the given threshold ",
+                    f"{app_settings.anmld_settings.early_stopping_rmsd}",
+                )
+            )
+            break
+
+        cycle_info.append(step_info)
         step += 1
         pbar.update(1)
 
     pbar.close()
+
+    cycle_df = pd.json_normalize(cycle_info)
+    cycle_df.to_csv(PS.out_dir / PS.info_csv, index=False)
+
+    return cycle_info
 
 
 @logger.catch(reraise=True)

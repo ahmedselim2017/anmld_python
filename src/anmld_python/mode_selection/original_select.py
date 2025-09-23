@@ -59,7 +59,7 @@ def generate_structures(
     Vz_step: jax.Array,
     step_logger: loguru.Logger,
     app_settings: AppSettings,
-) -> AtomArray:
+) -> tuple[AtomArray, dict]:
     N_nodes = Vx_step.shape[0]
 
     # (N_nodes, mode_max)
@@ -125,4 +125,7 @@ def generate_structures(
             mvmt_Z[i] * rescale_SC[sel_mode_idx]
         )
 
-    return aa_pred
+    return aa_pred, {
+        "mode_number": sel_mode_idx + 1,
+        "cos_sim": sel_mode_cos_sim,
+    }

@@ -20,7 +20,7 @@ def run_step(
     app_settings: AppSettings,
     mm_min_sim: Optional[Any] = None,
     mm_ld_sim: Optional[Any] = None,
-) -> Optional[float]:
+) -> dict:
     PS = app_settings.path_settings
     SP = app_settings.path_settings.step_path_settings.format_step(step)
 
@@ -51,9 +51,11 @@ def run_step(
     )
     match mode_selection:
         case "ORIGINAL":
-            from anmld_python.mode_selection.original_select import generate_structures
+            from anmld_python.mode_selection.original_select import (
+                generate_structures,
+            )
 
-            pred_aa = generate_structures(
+            pred_aa, sel_info = generate_structures(
                 aa_step=aa_step,
                 aa_target=aa_target,
                 Vx_step=Vx_step,
@@ -107,4 +109,7 @@ def run_step(
                 )
             except CalledProcessError:
                 raise LDError
-    return rmsd
+    return {
+        "rmsd": rmsd,
+        "selection": sel_info
+    }

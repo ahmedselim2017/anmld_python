@@ -3,12 +3,13 @@
 
 ## TODO
 
+- [ ] Colab
+    - [ ] analysis
 - [x] Use `cwd` for ambmask instead of absolute paths (ambmask25 doesn't work
   with absolute path inputs ?)
 - [x] Quote paths in config files and commands
-- [ ] Add a flag to overwrite out dir
-- [ ] Log steps information to CSV
-- [ ] mmCIF support
+- [x] Log steps information to CSV
+- [x] mmCIF support
 - [x] Early stopping
 - [x] openMM support
     - [x] first step
