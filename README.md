@@ -28,28 +28,35 @@ git clone https://github.com/ahmedselim2017/anmld_python
 pip install "."
 ```
 
-In the `settings.toml` file, the `ambertools_prefix` and `pmemd_prefix` fields
-of the `AMBER` section must be modified depending on your system to load AMBER.
-The given command will be run before each of the AmberTools and PMEMD calls.
+To use AMBER, the `ambertools_prefix` and `pmemd_prefix` fields of the `AMBER`
+section must be modified depending on your system to load AMBER. The given
+command will be run before each of the AmberTools and PMEMD calls.
 
 ## Configuration
 
-The default configuration can be found at the `settings.toml` file. While
-running, the unspecified options will default to default values.
+Configuration of `anmld-python` can be performed with a `toml` file.
+Unspecified settings will use their default values. The default configuration
+file that includes all of the settings that can be changed can be found at
+`settings.toml`. 
 
 ## Running
 
-You can run ANMLD with:
+You can run ANM-LD with:
 
 ```sh
 anmld-python settings.toml initial.pdb target.pdb
 ```
 
-You can check `anmld-python --help` for more details.
+You can check `anmld-python --help` for more details on how to start a run.
 
-## Cite
+The final predicted structures are saved as `STEP_[STEP_NUMBER]_ANMLD.pdb`. The
+intermediate structures, which have been deformed by ANM but have not yet
+undergone LD, are saved as `STEP_[STEP_NUMBER]_ANM.pdb`.
 
-If you use ANMLD, please cite:
+
+## Citing ANM-LD
+
+If you use ANM-LD, please cite:
 
 ```bibtex
 @article{ersoy_computational_2023,
@@ -84,7 +91,7 @@ ABC transporters couple the energy of ATP hydrolysis to the transmembrane transp
 }
 ```
 
-## Read More About ANMLD
+## Further Reading
 
 ```bibtex
 @article{yang_single-molecule_2018,
