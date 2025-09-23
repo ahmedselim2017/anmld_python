@@ -24,7 +24,7 @@ def run_setup(
     with open(PS.out_dir / PS.amber_min_in, "w") as AMBER_min_in_f:
         AMBER_min_in_f.write(
             dedent(f"""\
-            {app_settings.run_name} minimization, implicit solvent
+            ANMLD minimization, implicit solvent
              &cntrl
               imin = 1,
               maxcyc = {AS.min_step},
@@ -46,7 +46,7 @@ def run_setup(
     with open(PS.out_dir / PS.amber_sim_in, "w") as AMBER_sim_in_f:
         AMBER_sim_in_f.write(
             dedent(f"""\
-            {app_settings.run_name} targeted Langevin dynamics simulation
+            ANMLD targeted Langevin dynamics simulation
              &cntrl
               imin = 0,
               irest = 0,

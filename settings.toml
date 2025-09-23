@@ -1,0 +1,86 @@
+logging_level = "INFO"
+mode_selection = "ORIGINAL"
+LD_method = "OpenMM"
+
+[ANMLD]
+n_steps = 100
+rcut_ANM = 8.0
+gamma_ANM = 1.0
+DF = 0.6
+DF_SC_ratio = 1.0
+max_mode = 30
+early_stopping_rmsd = 2.0
+
+[AMBER]
+temp = 310.0
+min_step = 500
+ld_step = 100
+forcefield = "leaprc.protein.ff14SB"
+pmemd_prefix = "module load cuda/11.3 && module load amber/22_20231219 && "
+pmemd_cmd = "pmemd.cuda"
+ambertools_prefix = "module load cuda/11.3 && module load amber/22_20231219 && "
+
+[OpenMM]
+forcefield = "amber14/protein.ff14SB.xml"
+min_step = 500
+ld_step = 100
+ld_temp = 310.0
+save_min = false
+save_ld = false
+platform = "CUDA"
+
+[PATHS]
+out_dir = "out_openmm"
+info_csv = "run_info.csv"
+sanitized_init_structure = "sanitized_init.pdb"
+sanitized_target_structure = "sanitized_target.pdb"
+openmm_min_init_pdb = "OpenMM_min_init.pdb"
+openmm_min_aligned_init_pdb = "OpenMM_min_aligned_init.pdb"
+openmm_min_target_pdb = "OpenMM_min_target.pdb"
+amber_min_in = "AMBER_min.in"
+amber_sim_in = "AMBER_sim.in"
+amber_pdb_init_top = "AMBER_pdb_initial.top"
+amber_pdb_init_coord = "AMBER_pdb_initial.coord"
+amber_pdb_target_top = "AMBER_pdb_target.top"
+amber_pdb_target_coord = "AMBER_pdb_target.coord"
+amber_tleap_init_in = "AMBER_tleap_initial.in"
+amber_pdb_init_min_out = "AMBER_pdb_initial_min.out"
+amber_pdb_init_min_coord = "AMBER_pdb_initial_min.coord"
+amber_pdb_init_min_rst = "AMBER_pdb_initial_min.rst"
+amber_pdb_target_min_out = "AMBER_pdb_target_min.out"
+amber_pdb_target_min_coord = "AMBER_pdb_target_min.coord"
+amber_pdb_target_min_rst = "AMBER_pdb_target_min.rst"
+amber_ptraj_rewrite_init_in = "AMBER_ptraj_rewrite_initial.in"
+amber_pdb_rewrite_init_min_rst = "AMBER_initial_min.rst"
+amber_ptraj_align_target2initial_in = "AMBER_ptraj_align_target2initial.in"
+amber_rms_target_align_dat = "AMBER_rms_target_align.dat"
+amber_target_min_algn = "AMBER_target_min_algn.rst"
+amber_pdb_initial_min_pdb = "AMBER_pdb_initial_min.pdb"
+amber_pdb_initial_min_c_pdb = "AMBER_pdb_initial_min_C.pdb"
+amber_pdb_target_min_pdb = "AMBER_pdb_target_min.pdb"
+amber_pdb_target_min_c_pdb = "AMBER_pdb_target_min_C.pdb"
+
+[SUBPROCESS]
+shell = true
+check = true
+executable = "/bin/bash"
+
+[PATHS.STEP_PATHS]
+step_anm_pdb = "STEP_{step}_ANM.pdb"
+step_openmm_min = "STEP_{step}_OpenMM_min.pdb"
+step_openmm_ld = "STEP_{step}_OpenMM_ld.pdb"
+step_amber_tleap_anm_pdb = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
+step_amber_top = "STEP_{step}_AMBER_raw.top"
+step_amber_coord = "STEP_{step}_AMBER_raw.coord"
+step_amber_min_out = "STEP_{step}_AMBER_min.out"
+step_amber_min_coord = "STEP_{step}_AMBER_min.coord"
+step_amber_min_rst = "STEP_{step}_AMBER_min.rst"
+step_amber_sim_out = "STEP_{step}_AMBER_sim.out"
+step_amber_sim_coord = "STEP_{step}_AMBER_sim.coord"
+step_amber_sim_ener = "STEP_{step}_AMBER_sim.ener"
+step_amber_sim_restart = "STEP_{step}_AMBER_sim.restart"
+step_amber_ptraj_align_in = "STEP_{step}_AMBER_sim_ptraj_align.in"
+step_amber_ptraj_rms_align_dat = "STEP_{step}_AMBER_rms.dat"
+step_amber_ptraj_algn_restart = "STEP_{step}_AMBER_algn.restart"
+step_anmld_pdb = "STEP_{step}_ANMLD.pdb"
+step_anmld_CA_pdb = "STEP_{step}_ANMLD_CA.pdb"

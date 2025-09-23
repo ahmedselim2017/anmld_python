@@ -56,7 +56,7 @@ class StepPathSettings(BaseSettings):
 
 
 class PathSettings(BaseSettings):
-    out_dir: Path = Field(Path("out_openmm"))
+    out_dir: Path = Field(Path("anmld_out"))
     info_csv: Path = Field(Path("run_info.csv"))
 
     sanitized_init_structure: str = "sanitized_init.pdb"
@@ -136,9 +136,8 @@ class ANMLDSettings(BaseSettings):
 
 
 class AppSettings(BaseSettings):
-    run_name: str = Field("anmld_run", alias="name")
     logging_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = (
-        "DEBUG"
+        "INFO"
     )
     mode_selection: Literal["ORIGINAL"] = "ORIGINAL"
     LD_method: Literal["AMBER", "OpenMM"] = "OpenMM"
