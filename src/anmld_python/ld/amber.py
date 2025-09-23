@@ -4,6 +4,7 @@ from textwrap import dedent
 import subprocess
 from typing import Optional
 
+import biotite.structure as b_structure
 import loguru
 
 from anmld_python.settings import AppSettings, StepPathSettings
@@ -352,4 +353,12 @@ def run_ld_step(
             **app_settings.subprocess_settings.__dict__,
         )
 
-    return None # TODO: return RMSD
+    ld_aa = get_atomarray(PS.out_dir / SP.step_anm_pdb)
+    aa_target = get_atomarray(PS.out_dir / PS.amber_pdb_target_min_pdb)
+
+    ld_aligned_aa, _ = b_structure.superimpose(fixed=aa_target, mobile=ld_aa)
+    ld_rmsd = b_structure.rmsd(aa_target, ld_aligned_aa)
+
+    ld_logger.info(f"Finished LD step with {float(ld_rmsd)} RMSD")
+
+    return ld_rmsd

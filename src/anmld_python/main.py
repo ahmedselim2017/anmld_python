@@ -29,12 +29,6 @@ def process_inputs(
     PS = app_settings.path_settings
     PS.out_dir = PS.out_dir.absolute()
 
-    if (
-        app_settings.LD_method == "AMBER"
-        and app_settings.anmld_settings.early_stopping_rmsd
-    ):
-        logger.warning("Early stopping is only availible for OpenMM")
-
     app_settings.subprocess_settings.cwd = PS.out_dir
 
     PS.out_dir.mkdir(parents=True)
