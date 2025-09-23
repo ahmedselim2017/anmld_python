@@ -66,4 +66,40 @@ If you use ANMLD, please cite:
 	date = {2023-12-18},
 	langid = {english},
 }
+
+@article{ACAR2020651,
+title = {Distinct Allosteric Networks Underlie Mechanistic Speciation of ABC Transporters},
+journal = {Structure},
+volume = {28},
+number = {6},
+pages = {651-663.e5},
+year = {2020},
+issn = {0969-2126},
+doi = {https://doi.org/10.1016/j.str.2020.03.014},
+url = {https://www.sciencedirect.com/science/article/pii/S0969212620300964},
+author = {Burçin Acar and Jessica Rose and Burcu {Aykac Fas} and Nir Ben-Tal and Oded Lewinson and Turkan Haliloglu},
+keywords = {ABC transporter, membrane protein, molecular dynamics, ANM, ANM-LD, allostery, ATP hydrolysis, transport},
+abstract = {Summary
+ABC transporters couple the energy of ATP hydrolysis to the transmembrane transport of biomolecules. Here, we investigated the allosteric networks of three representative ABC transporters using a hybrid molecular simulations approach validated by experiments. Each of the three transporters uses a different allosteric network: in the constitutive B12 importer BtuCD, ATP binding is the main driver of allostery and docking/undocking of the substrate-binding protein (SBP) is the driven event. The allosteric signal originates at the cytoplasmic side of the membrane before propagating to the extracellular side. In the substrate-controlled maltose transporter, the SBP is the main driver of allostery, ATP binding is the driven event, and the allosteric signal propagates from the extracellular to the cytoplasmic side of the membrane. In the lipid flippase PglK, a cyclic crosstalk between ATP and substrate binding underlies allostery. These results demonstrate speciation of biological functions may arise from variations in allosteric connectivity.}
+}
+```
+
+## Read More About ANMLD
+
+```bibtex
+@article{yang_single-molecule_2018,
+	title = {Single-molecule probing of the conformational homogeneity of the {ABC} transporter {BtuCD}},
+	volume = {14},
+	issn = {1552-4450, 1552-4469},
+	url = {https://www.nature.com/articles/s41589-018-0088-2},
+	doi = {10.1038/s41589-018-0088-2},
+	pages = {715--722},
+	number = {7},
+	journaltitle = {Nature Chemical Biology},
+	shortjournal = {Nat Chem Biol},
+	author = {Yang, Min and Livnat Levanon, Nurit and Acar, Burçin and Aykac Fas, Burcu and Masrati, Gal and Rose, Jessica and Ben-Tal, Nir and Haliloglu, Turkan and Zhao, Yongfang and Lewinson, Oded},
+	urldate = {2025-09-23},
+	date = {2018-07},
+	langid = {english},
+}
 ```
