@@ -57,7 +57,9 @@ class StepPathSettings(BaseSettings):
 
 class PathSettings(BaseSettings):
     out_dir: Path = Field(Path("anmld_out"))
-    info_csv: Path = Field(Path("run_info.csv"))
+    info_csv: Path = Field(Path("info.csv"))
+    info_rmsd_fig: Path = Field(Path("info_RMSDs.pdf"))
+    info_sel_modes_fig: Path = Field(Path("info_sel_modes.pdf"))
 
     sanitized_init_structure: str = "sanitized_init.pdb"
     sanitized_target_structure: str = "sanitized_target.pdb"
@@ -132,7 +134,10 @@ class ANMLDSettings(BaseSettings):
     DF: PositiveFloat = Field(0.6)
     DF_SC_ratio: PositiveFloat = Field(1)
     max_mode: PositiveInt = Field(30)
-    early_stopping_rmsd: PositiveFloat = Field(2)
+
+    early_stopping_aa_rmsd: float = Field(0)
+    early_stopping_ca_rmsd: float = Field(0)
+
 
 
 class AppSettings(BaseSettings):

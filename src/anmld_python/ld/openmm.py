@@ -14,7 +14,7 @@ import loguru
 import openmm as mm
 
 from anmld_python.settings import AppSettings, StepPathSettings
-from anmld_python.tools import get_atomarray, write_atomarray
+from anmld_python.tools import get_CAs, get_atomarray, write_atomarray
 
 
 def setup_sims(
@@ -153,7 +153,7 @@ def run_ld_step(
     ld_logger: loguru.Logger,
     app_settings: AppSettings,
     step_paths: StepPathSettings,
-) -> float:
+) -> dict:
     MS = app_settings.openmm_settings
     PS = app_settings.path_settings
 
@@ -192,12 +192,23 @@ def run_ld_step(
 
     ld_logger.debug("Aligning the LD result to the target")
     ld_aligned_aa, _ = b_structure.superimpose(fixed=aa_target, mobile=ld_aa)
-    ld_rmsd = b_structure.rmsd(aa_target, ld_aligned_aa)
+    ld_aa_rmsd = b_structure.rmsd(aa_target, ld_aligned_aa)
+
+    ld_ca = get_CAs(ld_aa)
+    target_ca = get_CAs(aa_target)
+
+    ld_aligned_ca, _ = b_structure.superimpose(fixed=target_ca, mobile=ld_ca)
+    ld_ca_rmsd = b_structure.rmsd(target_ca, ld_aligned_ca)
 
     write_atomarray(
         aa=ld_aligned_aa,
         out_path=PS.out_dir / step_paths.step_anmld_pdb,
     )
-    ld_logger.info(f"Finished LD step with {float(ld_rmsd)} RMSD")
+    ld_logger.info(
+        f"Finished LD step with AA RMSD: {float(ld_aa_rmsd)} and C-alpha RMSD: {float(ld_ca_rmsd)}."
+    )
 
-    return ld_rmsd
+    return {
+        "aa_rmsd": ld_aa_rmsd,
+        "ca_rmsd": ld_ca_rmsd,
+    }

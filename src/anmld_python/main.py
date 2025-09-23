@@ -1,14 +1,16 @@
 from __future__ import annotations
-from pathlib import Path
-import importlib.metadata
-from typing import Optional
 from loguru import logger
+from pathlib import Path
+from typing import Optional
+import importlib.metadata
 import tomllib
 
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 import numpy as np
-import typer
 import pandas as pd
+import seaborn as sns
+import typer
 
 from anmld_python.runner import run_step
 from anmld_python.settings import AppSettings
@@ -57,7 +59,7 @@ def process_inputs(
         )
 
 
-def run_cycle(app_settings: AppSettings):
+def run_cycle(app_settings: AppSettings) -> list[dict]:
     PS = app_settings.path_settings
 
     pbar = tqdm(
@@ -105,35 +107,24 @@ def run_cycle(app_settings: AppSettings):
                         app_settings=app_settings,
                     )
 
-                    aa_step = get_atomarray(
-                        PS.out_dir / PS.openmm_min_aligned_init_pdb
-                    )
-                    aa_target = get_atomarray(
-                        PS.out_dir / PS.openmm_min_target_pdb
-                    )
+                    aa_step = get_atomarray(PS.out_dir / PS.openmm_min_aligned_init_pdb)
+                    aa_target = get_atomarray(PS.out_dir / PS.openmm_min_target_pdb)
                 case "AMBER":
                     from anmld_python.ld.amber import run_setup
 
-                    aa_step = get_atomarray(
-                        PS.out_dir / PS.sanitized_init_structure
-                    )
+                    aa_step = get_atomarray(PS.out_dir / PS.sanitized_init_structure)
 
                     resnum = np.unique(aa_step.res_id).size  # type: ignore
                     run_setup(
                         path_abs_init=PS.out_dir / PS.sanitized_init_structure,
-                        path_abs_target=PS.out_dir
-                        / PS.sanitized_target_structure,
+                        path_abs_target=PS.out_dir / PS.sanitized_target_structure,
                         resnum=resnum,
                         ld_logger=ld_logger,
                         app_settings=app_settings,
                     )
 
-                    aa_step = get_atomarray(
-                        PS.out_dir / PS.amber_pdb_initial_min_pdb
-                    )
-                    aa_target = get_atomarray(
-                        PS.out_dir / PS.amber_pdb_target_min_pdb
-                    )
+                    aa_step = get_atomarray(PS.out_dir / PS.amber_pdb_initial_min_pdb)
+                    aa_target = get_atomarray(PS.out_dir / PS.amber_pdb_target_min_pdb)
 
         try:
             step_info = run_step(
@@ -148,9 +139,7 @@ def run_cycle(app_settings: AppSettings):
             )
         except NonConnectedStructureError:
             if step == 0:
-                raise ValueError(
-                    "The given initial structure is not fully connected"
-                )
+                raise ValueError("The given initial structure is not fully connected")
             else:
                 ld_logger.warning(
                     f"ANM deformation produced a non-connected structure. Halving the DF value to {app_settings.anmld_settings.DF / 2} and restarting the step"
@@ -169,12 +158,22 @@ def run_cycle(app_settings: AppSettings):
 
         step_info["step"] = step
 
-        if step_info["rmsd"] < app_settings.anmld_settings.early_stopping_rmsd:
+        # TODO
+        if step_info["aa_rmsd"] < app_settings.anmld_settings.early_stopping_aa_rmsd:
             step_logger.success(
                 (
-                    f"Early stopping with {float(step_info['rmsd'])} RMSD ",
-                    "which is below the given threshold ",
-                    f"{app_settings.anmld_settings.early_stopping_rmsd}",
+                    f"Early stopping with {float(step_info['aa_rmsd'])} ",
+                    "all-atom RMSD  which is below the given threshold ",
+                    f"{app_settings.anmld_settings.early_stopping_aa_rmsd}",
+                )
+            )
+            break
+        elif step_info["ca_rmsd"] < app_settings.anmld_settings.early_stopping_ca_rmsd:
+            step_logger.success(
+                (
+                    f"Early stopping with {float(step_info['ca_rmsd'])} ",
+                    "C-alpha RMSD  which is below the given threshold ",
+                    f"{app_settings.anmld_settings.early_stopping_ca_rmsd}",
                 )
             )
             break
@@ -185,10 +184,48 @@ def run_cycle(app_settings: AppSettings):
 
     pbar.close()
 
+    return cycle_info
+
+
+def analyze(cycle_info: list[dict], app_settings: AppSettings):
+    PS = app_settings.path_settings
+
     cycle_df = pd.json_normalize(cycle_info)
     cycle_df.to_csv(PS.out_dir / PS.info_csv, index=False)
+    logger.info(f"Wrote cycle results to {PS.out_dir / PS.info_csv}")
 
-    return cycle_info
+    sns.set_theme()
+
+    fig, ax = plt.subplots()
+    sns.lineplot(
+        cycle_df["aa_rmsd"],
+        label="All atom RMSD to the target",
+        color=sns.color_palette()[0],
+        ax=ax,
+    )
+    sns.lineplot(
+        cycle_df["ca_rmsd"],
+        label="C-alpha RMSD to the target",
+        color=sns.color_palette()[1],
+        ax=ax,
+    )
+    ax.set_xlabel("Step")
+    ax.set_ylabel("RMSD")
+    fig.savefig(PS.out_dir / PS.info_rmsd_fig)
+
+    fig, ax = plt.subplots()
+    sns.scatterplot(
+        cycle_df["selection.mode_number"],
+        label="Selected mode",
+        legend=None,
+        color=sns.color_palette()[0],
+        ax=ax,
+    )
+    ax.set_xlabel("Step")
+    ax.set_ylabel("Selected Mode")
+    fig.savefig(PS.out_dir / PS.info_sel_modes_fig)
+
+    logger.info(f"Plotted cycle results.")
 
 
 @logger.catch()
@@ -230,12 +267,16 @@ def main(
         app_settings=app_settings,
     )
 
-    run_cycle(app_settings=app_settings)
+    cycle_info = run_cycle(app_settings=app_settings)
+
+    analyze(cycle_info=cycle_info, app_settings=app_settings)
+
 
 def cli():
     app = typer.Typer()
     app.command()(main)
     app(standalone_mode=False)
+
 
 if __name__ == "__main__":
     cli()

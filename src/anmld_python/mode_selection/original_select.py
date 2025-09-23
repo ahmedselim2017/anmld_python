@@ -91,9 +91,7 @@ def generate_structures(
 
     aa_pred = aa_step.copy()
 
-    aa_nonSC_mask = np.isin(
-        cast(np.ndarray, aa_pred.atom_name), ["CA", "N", "O", "C"]
-    )
+    aa_nonSC_mask = np.isin(cast(np.ndarray, aa_pred.atom_name), ["CA", "N", "O", "C"])
 
     # TODO: needs to be imporved
     mvmt_X = np.asarray(Vx_step[:, sel_mode_idx] * sel_mode_sign)
@@ -126,6 +124,6 @@ def generate_structures(
         )
 
     return aa_pred, {
-        "mode_number": sel_mode_idx + 1,
-        "cos_sim": sel_mode_cos_sim,
+        "mode_number": int(sel_mode_idx) + 1,
+        "cos_sim": float(sel_mode_cos_sim),
     }

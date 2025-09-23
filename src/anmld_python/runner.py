@@ -81,7 +81,7 @@ def run_step(
                 raise ValueError("mm_min_sim and mm_ld_sim must not be None.")
 
             try:
-                rmsd = run_ld_step(
+                step_info = run_ld_step(
                     aa_anm=pred_aa,
                     aa_target=aa_target,
                     pred_abs_path=pred_abs_path,
@@ -99,7 +99,7 @@ def run_step(
 
             resnum: int = np.unique(aa_step.res_id).size  # type: ignore
             try:
-                rmsd = run_ld_step(
+                step_info = run_ld_step(
                     pred_abs_path=pred_abs_path,
                     resnum=resnum,
                     ld_logger=ld_logger,
@@ -108,4 +108,5 @@ def run_step(
                 )
             except CalledProcessError:
                 raise LDError
-    return {"rmsd": rmsd, "selection": sel_info}
+    step_info["selection"] = sel_info
+    return step_info

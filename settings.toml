@@ -9,7 +9,8 @@ gamma_ANM = 1.0
 DF = 0.6
 DF_SC_ratio = 1.0
 max_mode = 30
-early_stopping_rmsd = 2.0
+early_stopping_aa_rmsd = 0.0
+early_stopping_ca_rmsd = 0.0
 
 [AMBER]
 temp = 310.0
@@ -30,8 +31,10 @@ save_ld = false
 platform = "CUDA"
 
 [PATHS]
-out_dir = "out_openmm"
+out_dir = "out"
 info_csv = "run_info.csv"
+info_rmsd_fig = "info_RMSDs.pdf"
+info_sel_modes_fig = "info_sel_modes.pdf"
 sanitized_init_structure = "sanitized_init.pdb"
 sanitized_target_structure = "sanitized_target.pdb"
 openmm_min_init_pdb = "OpenMM_min_init.pdb"

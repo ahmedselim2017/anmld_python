@@ -8,7 +8,7 @@ import biotite.structure as b_structure
 import loguru
 
 from anmld_python.settings import AppSettings, StepPathSettings
-from anmld_python.tools import get_atomarray
+from anmld_python.tools import get_CAs, get_atomarray
 
 
 def run_setup(
@@ -245,7 +245,7 @@ def run_ld_step(
     ld_logger: loguru.Logger,
     app_settings: AppSettings,
     SP: StepPathSettings,
-) -> Optional[float]:
+) -> dict:
     AS = app_settings.amber_settings
     PS = app_settings.path_settings
 
@@ -357,8 +357,19 @@ def run_ld_step(
     aa_target = get_atomarray(PS.out_dir / PS.amber_pdb_target_min_pdb)
 
     ld_aligned_aa, _ = b_structure.superimpose(fixed=aa_target, mobile=ld_aa)
-    ld_rmsd = b_structure.rmsd(aa_target, ld_aligned_aa)
+    ld_aa_rmsd = b_structure.rmsd(aa_target, ld_aligned_aa)
 
-    ld_logger.info(f"Finished LD step with {float(ld_rmsd)} RMSD")
+    ld_ca = get_CAs(ld_aa)
+    target_ca = get_CAs(aa_target)
 
-    return ld_rmsd
+    ld_aligned_ca, _ = b_structure.superimpose(fixed=target_ca, mobile=ld_ca)
+    ld_ca_rmsd = b_structure.rmsd(target_ca, ld_aligned_ca)
+
+    ld_logger.info(
+        f"Finished LD step with AA RMSD: {float(ld_aa_rmsd)} and C-alpha RMSD: {float(ld_ca_rmsd)}."
+    )
+
+    return {
+        "aa_rmsd": ld_aa_rmsd,
+        "ca_rmsd": ld_ca_rmsd,
+    }
