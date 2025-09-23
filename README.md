@@ -13,12 +13,12 @@ pip install ".[openmm]"
 
 To install with CUDA12 support:
 ```sh
-pip install ".[openmm-cuda]"
+pip install ".[openmm-cuda12]"
 ```
 
 To install with HIP6 support:
 ```sh
-pip install ".[openmm-hip]"
+pip install ".[openmm-hip6]"
 ```
 
 ### Using AMBER for Langevin dynamics
