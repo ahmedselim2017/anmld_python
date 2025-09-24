@@ -8,17 +8,17 @@
 
 ```sh
 git clone https://github.com/ahmedselim2017/anmld_python
-pip install ".[openmm]"
+pip install "."
 ```
 
 To install with CUDA12 support:
 ```sh
-pip install ".[openmm-cuda12]"
+pip install ".[cuda12]"
 ```
 
 To install with HIP6 support:
 ```sh
-pip install ".[openmm-hip6]"
+pip install ".[hip6]"
 ```
 
 ### Using AMBER for Langevin dynamics

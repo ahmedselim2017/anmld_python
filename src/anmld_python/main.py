@@ -210,7 +210,9 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
         ax=ax,
     )
     ax.set_xlabel("Step")
-    ax.set_ylabel("RMSD")
+    ax.set_ylabel("RMSD (Å)")
+    ax.set_title("RMSD to the target")
+    fig.tight_layout()
     fig.savefig(PS.out_dir / PS.info_rmsd_fig)
 
     fig, ax = plt.subplots()
@@ -222,7 +224,9 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
         ax=ax,
     )
     ax.set_xlabel("Step")
-    ax.set_ylabel("Selected Mode")
+    ax.set_ylabel("Mode")
+    ax.set_title("Selected Modes")
+    fig.tight_layout()
     fig.savefig(PS.out_dir / PS.info_sel_modes_fig)
 
     logger.info(f"Plotted cycle results.")
