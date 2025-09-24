@@ -21,6 +21,13 @@ from anmld_python.tools import (
     sanitize_pdb,
 )
 
+try:
+    import jax
+    jax.config.update("jax_enable_x64", True)
+except ModuleNotFoundError:
+    logger.warning("JAX was not found. Using NumPy as fallback.")
+    pass
+
 
 def process_inputs(
     path_abs_structure_init: Path,

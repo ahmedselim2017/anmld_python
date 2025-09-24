@@ -1,4 +1,5 @@
-import anmld_python.anm as ANM
+import anmld_python.anm.jax as ANM_jax
+import anmld_python.anm.numpy as ANM_np
 
 import numpy as np
 import prody
@@ -17,10 +18,13 @@ def test_build_hessian():
 
     # perform JIT
     coords_tmp = jnp.ones_like(calphas.getCoords())
-    ANM.build_hessian(coords_tmp)
+    ANM_jax.build_hessian(coords_tmp)
 
-    hessian = ANM.build_hessian(calphas.getCoords())
+    hessian = ANM_jax.build_hessian(calphas.getCoords())
 
+    assert np.allclose(hessian, prody_anm.getHessian())  # type: ignore
+
+    hessian = ANM_np.build_hessian(calphas.getCoords())
     assert np.allclose(hessian, prody_anm.getHessian())  # type: ignore
 
 def test_calc_modes():
@@ -30,8 +34,16 @@ def test_calc_modes():
     prody_anm.buildHessian(calphas)
     prody_anm.calcModes(30)
 
-    hessian = ANM.build_hessian(calphas.getCoords())
-    L, Q, *_ = ANM.calc_modes(hessian)
+    hessian = ANM_jax.build_hessian(calphas.getCoords())
+    L, Q, *_ = ANM_jax.calc_modes(hessian)
+
+    # take the abs of the eigenvectors before comparing them as the phase of
+    # the eigenvectors are arbitrary.
+    assert np.allclose(np.abs(prody_anm.getEigvecs()), np.abs(Q))  # type: ignore
+    assert np.allclose(prody_anm.getEigvals(), L)  # type: ignore
+
+    hessian = ANM_np.build_hessian(calphas.getCoords())
+    L, Q, *_ = ANM_np.calc_modes(hessian)
 
     # take the abs of the eigenvectors before comparing them as the phase of
     # the eigenvectors are arbitrary.

@@ -8,6 +8,7 @@ import numpy as np
 
 from anmld_python.settings import AppSettings, StepPathSettings
 from anmld_python.tools import LDError, NonConnectedStructureError, get_CAs
+
 import anmld_python.anm as ANM
 
 
@@ -50,9 +51,7 @@ def run_step(
     )
     match mode_selection:
         case "ORIGINAL":
-            from anmld_python.mode_selection.original_select import (
-                generate_structures,
-            )
+            from anmld_python.mode_selection.original import generate_structures
 
             pred_aa, sel_info = generate_structures(
                 aa_step=aa_step,
