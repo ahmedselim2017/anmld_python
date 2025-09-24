@@ -166,19 +166,19 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
         step_info["step"] = step
 
         # TODO
-        if step_info["aa_rmsd"] < app_settings.anmld_settings.early_stopping_aa_rmsd:
+        if step_info["aa_rmsd_target"] < app_settings.anmld_settings.early_stopping_aa_rmsd:
             step_logger.success(
                 (
-                    f"Early stopping with {float(step_info['aa_rmsd'])} ",
+                    f"Early stopping with {float(step_info['aa_rmsd_target'])} ",
                     "all-atom RMSD  which is below the given threshold ",
                     f"{app_settings.anmld_settings.early_stopping_aa_rmsd}",
                 )
             )
             break
-        elif step_info["ca_rmsd"] < app_settings.anmld_settings.early_stopping_ca_rmsd:
+        elif step_info["ca_rmsd_target"] < app_settings.anmld_settings.early_stopping_ca_rmsd:
             step_logger.success(
                 (
-                    f"Early stopping with {float(step_info['ca_rmsd'])} ",
+                    f"Early stopping with {float(step_info['ca_rmsd_target'])} ",
                     "C-alpha RMSD  which is below the given threshold ",
                     f"{app_settings.anmld_settings.early_stopping_ca_rmsd}",
                 )
@@ -205,20 +205,34 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
 
     fig, ax = plt.subplots()
     sns.lineplot(
-        cycle_df["aa_rmsd"],
+        cycle_df["aa_rmsd_target"],
         label="All atom RMSD to the target",
         color=sns.color_palette()[0],
         ax=ax,
     )
     sns.lineplot(
-        cycle_df["ca_rmsd"],
+        cycle_df["ca_rmsd_target"],
         label="C-alpha RMSD to the target",
+        color=sns.color_palette()[0],
+        linestyle="dashed",
+        ax=ax,
+    )
+    sns.lineplot(
+        cycle_df["aa_rmsd_init"],
+        label="All atom RMSD to the initial",
         color=sns.color_palette()[1],
+        ax=ax,
+    )
+    sns.lineplot(
+        cycle_df["ca_rmsd_init"],
+        label="C-alpha RMSD to the initial",
+        color=sns.color_palette()[1],
+        linestyle="dashed",
         ax=ax,
     )
     ax.set_xlabel("Step")
     ax.set_ylabel("RMSD (Å)")
-    ax.set_title("RMSD to the target")
+    ax.set_title("RMSD Values With The Minimized Target and Initial Structures")
     fig.tight_layout()
     fig.savefig(PS.out_dir / PS.info_rmsd_fig)
 

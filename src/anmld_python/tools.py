@@ -15,8 +15,10 @@ from anmld_python.settings import AppSettings
 class LDError(Exception):
     pass
 
+
 class NonConnectedStructureError(Exception):
     pass
+
 
 def write_atomarray(aa: AtomArray, out_path: Path):
     match out_path.suffix:
@@ -53,7 +55,9 @@ def get_atomarray(
                     **kwargs,
                 )
             except BaseException:
-                logger.warning("fastpdb panicked while loading the structure, using biotite to load the structure.")
+                logger.warning(
+                    "fastpdb panicked while loading the structure, using biotite to load the structure."
+                )
                 structure_file = b_pdb.PDBFile.read(structure_path)
                 atomarray = structure_file.get_structure(
                     extra_fields=extra_fields,
@@ -130,3 +134,16 @@ def sanitize_pdb(
 
         aa = get_atomarray(out_path, *args, **kwargs)
     return aa
+
+
+def calc_aa_ca_rmsd(aa_fixed: AtomArray, aa_mobile: AtomArray) -> tuple[float, float]:
+    aa_aligned, _ = b_structure.superimpose(fixed=aa_fixed, mobile=aa_mobile)
+    aa_rmsd = b_structure.rmsd(aa_fixed, aa_aligned)
+
+    ca_fixed = get_CAs(aa_fixed)
+    ca_mobile = get_CAs(aa_mobile)
+
+    ca_aligned, _ = b_structure.superimpose(fixed=ca_fixed, mobile=ca_mobile)
+    ca_rmsd = b_structure.rmsd(ca_fixed, ca_aligned)
+
+    return float(aa_rmsd), float(ca_rmsd)

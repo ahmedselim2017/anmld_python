@@ -8,7 +8,7 @@ import biotite.structure as b_structure
 import loguru
 
 from anmld_python.settings import AppSettings, StepPathSettings
-from anmld_python.tools import get_CAs, get_atomarray
+from anmld_python.tools import calc_aa_ca_rmsd, get_CAs, get_atomarray
 
 
 def run_setup(
@@ -76,9 +76,7 @@ def run_setup(
             path=PS.out_dir / PS.amber_sim_in,
         )
 
-    with open(
-        PS.out_dir / PS.amber_tleap_init_in, "w"
-    ) as AMBER_tleap_initial_f:
+    with open(PS.out_dir / PS.amber_tleap_init_in, "w") as AMBER_tleap_initial_f:
         AMBER_tleap_initial_f.write(
             dedent(f"""\
             source {AS.forcefield}
@@ -353,23 +351,29 @@ def run_ld_step(
             **app_settings.subprocess_settings.__dict__,
         )
 
+    ld_logger.debug("Aligning the LD result to the target")
     ld_aa = get_atomarray(PS.out_dir / SP.step_anm_pdb)
     aa_target = get_atomarray(PS.out_dir / PS.amber_pdb_target_min_pdb)
+    aa_init = get_atomarray(PS.out_dir / PS.amber_pdb_initial_min_pdb)
 
-    ld_aligned_aa, _ = b_structure.superimpose(fixed=aa_target, mobile=ld_aa)
-    ld_aa_rmsd = b_structure.rmsd(aa_target, ld_aligned_aa)
-
-    ld_ca = get_CAs(ld_aa)
-    target_ca = get_CAs(aa_target)
-
-    ld_aligned_ca, _ = b_structure.superimpose(fixed=target_ca, mobile=ld_ca)
-    ld_ca_rmsd = b_structure.rmsd(target_ca, ld_aligned_ca)
-
-    ld_logger.info(
-        f"Finished LD step with AA RMSD: {float(ld_aa_rmsd)} and C-alpha RMSD: {float(ld_ca_rmsd)}."
+    step_info = {}
+    step_info["aa_rmsd_target"], step_info["ca_rmsd_target"] = calc_aa_ca_rmsd(
+        aa_fixed=aa_target,
+        aa_mobile=ld_aa,
+    )
+    step_info["aa_rmsd_init"], step_info["ca_rmsd_init"] = calc_aa_ca_rmsd(
+        aa_fixed=aa_init,
+        aa_mobile=ld_aa,
     )
 
-    return {
-        "aa_rmsd": ld_aa_rmsd,
-        "ca_rmsd": ld_ca_rmsd,
-    }
+    msg = (
+        "Finished LD step with ",
+        f"target AA RMSD: {step_info['aa_rmsd_target']} "
+        f"target C-alpha RMSD: {step_info['ca_rmsd_target']} "
+        f"initial AA RMSD: {step_info['aa_rmsd_init']} "
+        f"initial C-alpha RMSD: {step_info['ca_rmsd_init']} "
+    )
+
+    ld_logger.info(msg)
+
+    return step_info
