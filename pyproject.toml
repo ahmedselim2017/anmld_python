@@ -49,7 +49,7 @@ dev = [
 ]
 notebook = [
     "mdtraj>=1.11.0",
-    "nglview>=3.1.4",
+    "py3dmol>=2.5.2",
     "seaborn>=0.13.2",
     "toml>=0.10.2",
 ]

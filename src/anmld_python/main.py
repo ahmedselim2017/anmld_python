@@ -5,7 +5,7 @@ from typing import Optional
 import importlib.metadata
 import tomllib
 
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
