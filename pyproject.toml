@@ -48,6 +48,7 @@ dev = [
     "pytest>=8.4.1",
 ]
 notebook = [
+    "jax[cuda12]>=0.7.1; sys_platform != 'darvin'",
     "mdtraj>=1.11.0",
     "py3dmol>=2.5.2",
     "seaborn>=0.13.2",
