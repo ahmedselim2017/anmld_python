@@ -102,17 +102,19 @@ def run_setup(
     PS = app_settings.path_settings
     MS = app_settings.openmm_settings
 
-    aa_temp = get_atomarray(path_init)
 
     pdb_init = mm_app.PDBFile(str(path_init))
     pdb_target = mm_app.PDBFile(str(path_target))
+
+    aa_init = b_mm.from_topology(pdb_init.topology)
+    aa_target = b_mm.from_topology(pdb_target.topology)
 
     # NOTE: min_sim is assumed to be not used
     ld_logger.debug("Running minimization for the initial structure.")
     init_min_sim.context.setPositions(pdb_init.positions)
     init_min_sim.minimizeEnergy(maxIterations=MS.min_step)
 
-    min_init_aa = b_mm.from_context(aa_temp, init_min_sim.context)
+    min_init_aa = b_mm.from_context(aa_init, init_min_sim.context)
     if MS.save_ld or app_settings.logging_level == "DEBUG":
         write_atomarray(
             aa=min_init_aa,
@@ -131,7 +133,7 @@ def run_setup(
     target_min_sim.context.setPositions(pdb_target.positions)
     target_min_sim.minimizeEnergy(maxIterations=MS.min_step)
 
-    min_target_aa = b_mm.from_context(aa_temp, target_min_sim.context)
+    min_target_aa = b_mm.from_context(aa_target, target_min_sim.context)
 
     write_atomarray(
         aa=min_target_aa,
