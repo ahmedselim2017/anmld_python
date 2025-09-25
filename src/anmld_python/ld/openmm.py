@@ -35,9 +35,9 @@ def setup_sims(
         platform = mm.Platform.getPlatformByName(MS.platform_name)
     except mm.OpenMMException:
         ld_logger.warning(
-            f"The given platform {MS.platform_name} is not found. Using CPU as fallback."
+            f"The given platform {MS.platform_name} is not found. Using the dafault platform."
         )
-        platform = mm.Platform.getPlatformByName("CPU")
+        platform = None
 
     mm_forcefield = mm_app.ForceField(
         MS.forcefield,
