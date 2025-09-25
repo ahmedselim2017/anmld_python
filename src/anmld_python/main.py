@@ -6,6 +6,7 @@ import importlib.metadata
 import tomllib
 
 from tqdm.auto import tqdm
+import biotite.structure as b_structure
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -23,6 +24,7 @@ from anmld_python.tools import (
 
 try:
     import jax
+
     jax.config.update("jax_enable_x64", True)
 except ModuleNotFoundError:
     logger.warning("JAX was not found. Using NumPy as fallback.")
@@ -60,10 +62,15 @@ def process_inputs(
         include_bonds=True,
     )
 
-    if aa_step.bonds.as_set() != aa_target.bonds.as_set():  # type: ignore
+    if b_structure.get_residue_count(aa_step) != b_structure.get_residue_count(
+        aa_target
+    ):
         raise ValueError(
-            "The initial and target structures must have the same topology"
+            "The initial and target structures must have the same residue count"
         )
+
+    elif aa_step.bonds.as_set() != aa_target.bonds.as_set():  # type: ignore
+        logger.warning("The initial and target structures must have the same topology")
 
 
 def run_cycle(app_settings: AppSettings) -> list[dict]:
@@ -109,7 +116,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                     run_setup(
                         path_init=PS.out_dir / PS.sanitized_init_structure,
                         path_target=PS.out_dir / PS.sanitized_target_structure,
-                        min_sim=mm_min_sim,
+                        init_min_sim=mm_min_sim,
                         ld_logger=ld_logger,
                         app_settings=app_settings,
                     )
@@ -165,8 +172,10 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
 
         step_info["step"] = step
 
-        # TODO
-        if step_info["aa_rmsd_target"] < app_settings.anmld_settings.early_stopping_aa_rmsd:
+        if (
+            step_info["aa_rmsd_target"]
+            < app_settings.anmld_settings.early_stopping_aa_rmsd
+        ):
             step_logger.success(
                 (
                     f"Early stopping with {float(step_info['aa_rmsd_target'])} ",
@@ -175,7 +184,10 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                 )
             )
             break
-        elif step_info["ca_rmsd_target"] < app_settings.anmld_settings.early_stopping_ca_rmsd:
+        elif (
+            step_info["ca_rmsd_target"]
+            < app_settings.anmld_settings.early_stopping_ca_rmsd
+        ):
             step_logger.success(
                 (
                     f"Early stopping with {float(step_info['ca_rmsd_target'])} ",
@@ -298,9 +310,9 @@ def main(
 
 
 def cli():
-    app = typer.Typer()
+    app = typer.Typer(pretty_exceptions_show_locals=False)
     app.command()(main)
-    app(standalone_mode=False)
+    app()
 
 
 if __name__ == "__main__":

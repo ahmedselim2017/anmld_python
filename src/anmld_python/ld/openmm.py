@@ -95,7 +95,7 @@ def setup_sims(
 def run_setup(
     path_init: Path,
     path_target: Path,
-    min_sim: Simulation,
+    init_min_sim: Simulation,
     ld_logger: loguru.Logger,
     app_settings: AppSettings,
 ):
@@ -109,23 +109,29 @@ def run_setup(
 
     # NOTE: min_sim is assumed to be not used
     ld_logger.debug("Running minimization for the initial structure.")
-    min_sim.context.setPositions(pdb_init.positions)
-    min_sim.minimizeEnergy(maxIterations=MS.min_step)
+    init_min_sim.context.setPositions(pdb_init.positions)
+    init_min_sim.minimizeEnergy(maxIterations=MS.min_step)
 
-    min_init_aa = b_mm.from_context(aa_temp, min_sim.context)
+    min_init_aa = b_mm.from_context(aa_temp, init_min_sim.context)
     if MS.save_ld or app_settings.logging_level == "DEBUG":
         write_atomarray(
             aa=min_init_aa,
             out_path=PS.out_dir / PS.openmm_min_init_pdb,
         )
 
-    min_sim.context.reinitialize()
+    init_min_sim.context.reinitialize()
 
     ld_logger.debug("Running minimization for the target structure.")
-    min_sim.context.setPositions(pdb_target.positions)
-    min_sim.minimizeEnergy(maxIterations=MS.min_step)
 
-    min_target_aa = b_mm.from_context(aa_temp, min_sim.context)
+    target_min_sim, _ = setup_sims(
+        topology=pdb_target.topology,
+        ld_logger=ld_logger,
+        app_settings=app_settings,
+    )
+    target_min_sim.context.setPositions(pdb_target.positions)
+    target_min_sim.minimizeEnergy(maxIterations=MS.min_step)
+
+    min_target_aa = b_mm.from_context(aa_temp, target_min_sim.context)
 
     write_atomarray(
         aa=min_target_aa,
@@ -208,7 +214,7 @@ def run_ld_step(
     aa_init = get_atomarray(PS.out_dir / PS.openmm_min_aligned_init_pdb)
     step_info = {
         "aa_rmsd_target": ld_aa_rmsd_target,
-        "ca_rmsd_target": ld_ca_rmsd_target
+        "ca_rmsd_target": ld_ca_rmsd_target,
     }
     step_info["aa_rmsd_init"], step_info["ca_rmsd_init"] = calc_aa_ca_rmsd(
         aa_fixed=aa_init,
