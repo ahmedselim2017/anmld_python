@@ -75,7 +75,7 @@ requires-dist = [
     { name = "openmm-cuda-12", marker = "extra == 'cuda12'", specifier = ">=8.3.1" },
     { name = "openmm-hip-6", marker = "extra == 'hip6'", specifier = ">=8.3.1" },
     { name = "pandas", specifier = "==2.2.2" },
-    { name = "pdbfixer", git = "https://github.com/openmm/pdbfixer?tag=v1.11" },
+    { name = "pdbfixer", git = "https://github.com/openmm/pdbfixer?rev=v1.11" },
     { name = "prody", marker = "extra == 'dev'", specifier = ">=2.6.1" },
     { name = "py3dmol", marker = "extra == 'notebook'", specifier = ">=2.5.2" },
     { name = "pydantic", specifier = ">=2.11.7" },
@@ -1057,7 +1057,7 @@ wheels = [
 [[package]]
 name = "pdbfixer"
 version = "1.11.0"
-source = { git = "https://github.com/openmm/pdbfixer?tag=v1.11#199f03df6c50f7cf6120de766f4ccce426fda4e9" }
+source = { git = "https://github.com/openmm/pdbfixer?rev=v1.11#199f03df6c50f7cf6120de766f4ccce426fda4e9" }
 dependencies = [
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' and sys_platform == 'linux'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'linux'" },
