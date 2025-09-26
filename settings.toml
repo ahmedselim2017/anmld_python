@@ -13,7 +13,7 @@ early_stopping_aa_rmsd = 0.0
 early_stopping_ca_rmsd = 0.0
 
 [AMBER]
-temp = 310.0
+ld_temp = 310.0
 min_step = 500
 ld_step = 100
 forcefield = "leaprc.protein.ff14SB"

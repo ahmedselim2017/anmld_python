@@ -1,13 +1,15 @@
 from pathlib import Path
 from typing import Optional, cast
 
-from loguru import logger
 from biotite.structure.atoms import AtomArray
+from loguru import logger
 import biotite.structure as b_structure
-import biotite.structure.io.pdbx as b_pdbx
 import biotite.structure.io.pdb as b_pdb
+import biotite.structure.io.pdbx as b_pdbx
 import fastpdb
 import numpy as np
+import openmm.app as mm_app
+import pdbfixer
 
 from anmld_python.settings import AppSettings
 
@@ -113,11 +115,16 @@ def sanitize_pdb(
     out_file.set_structure(aa)
     out_file.write(out_path)
 
-    if app_settings.LD_method == "OpenMM":
-        import openmm.app as mm_app
+    fixer = pdbfixer.PDBFixer(filename=str(out_path))
+    fixer.missingResidues = {}
+    fixer.findMissingAtoms()
+    fixer.addMissingAtoms()
 
-        pdb = mm_app.PDBFile(str(out_path))
-        modeller = mm_app.Modeller(pdb.topology, pdb.positions)
+    topology = fixer.topology
+    positions = fixer.positions
+
+    if app_settings.LD_method == "OpenMM":
+        modeller = mm_app.Modeller(topology, positions)
 
         mm_forcefield = mm_app.ForceField(
             app_settings.openmm_settings.forcefield,
@@ -125,14 +132,19 @@ def sanitize_pdb(
         )
         modeller.addHydrogens(mm_forcefield)
 
-        with open(out_path, "w") as out_file:
-            mm_app.PDBFile.writeFile(
-                modeller.getTopology(),
-                modeller.getPositions(),
-                out_file,
-            )
+        topology = modeller.getTopology()
+        positions = modeller.getPositions()
 
-        aa = get_atomarray(out_path, *args, **kwargs)
+    with open(out_path, "w") as out_file:
+        mm_app.PDBFile.writeFile(
+            topology,
+            positions,
+            out_file,
+            keepIds=True
+        )
+
+    aa = get_atomarray(out_path, *args, **kwargs)
+
     return aa
 
 

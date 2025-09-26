@@ -70,7 +70,9 @@ def process_inputs(
         )
 
     elif aa_step.bonds.as_set() != aa_target.bonds.as_set():  # type: ignore
-        logger.warning("The initial and target structures must have the same topology")
+        logger.warning(
+            "The initial and target structures do not have the same topology"
+        )
 
 
 def run_cycle(app_settings: AppSettings) -> list[dict]:

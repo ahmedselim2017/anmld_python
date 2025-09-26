@@ -15,6 +15,7 @@ dependencies = [
     "numpy>=2.0.2",
     "openmm>=8.3.1",
     "pandas==2.2.2",
+    "pdbfixer",
     "pydantic-settings>=2.10.1",
     "pydantic>=2.11.7",
     "seaborn>=0.13.2",
@@ -37,6 +38,9 @@ venv = ".venv"
 environments = [
     "sys_platform == 'linux'"
 ]
+
+[tool.uv.sources]
+pdbfixer = { git = "https://github.com/openmm/pdbfixer", tag = "v1.11" }
 
 [project.optional-dependencies]
 dev = [
