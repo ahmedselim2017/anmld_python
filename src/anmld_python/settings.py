@@ -105,7 +105,7 @@ class PathSettings(BaseSettings):
 
 
 class AmberSettings(BaseSettings):
-    temp: PositiveFloat = Field(310)
+    ld_temp: PositiveFloat = Field(310)
     min_step: PositiveInt = Field(500)
     ld_step: PositiveInt = Field(100)
     forcefield: str = Field("leaprc.protein.ff14SB")
