@@ -136,26 +136,42 @@ def sanitize_pdb(
         positions = modeller.getPositions()
 
     with open(out_path, "w") as out_file:
-        mm_app.PDBFile.writeFile(
-            topology,
-            positions,
-            out_file,
-            keepIds=True
-        )
+        mm_app.PDBFile.writeFile(topology, positions, out_file, keepIds=True)
 
     aa = get_atomarray(out_path, *args, **kwargs)
 
     return aa
 
 
-def calc_aa_ca_rmsd(aa_fixed: AtomArray, aa_mobile: AtomArray) -> tuple[float, float]:
-    aa_aligned, _ = b_structure.superimpose(fixed=aa_fixed, mobile=aa_mobile)
-    aa_rmsd = b_structure.rmsd(aa_fixed, aa_aligned)
+def calc_aa_ca_rmsd(
+    aa_fixed: AtomArray, aa_mobile: AtomArray, app_settings: AppSettings
+) -> tuple[Optional[float], float]:
+    aa_rmsd = None
+    aa_aligned = None
+    if not app_settings.different_topologies:
+        aa_aligned, _ = b_structure.superimpose(fixed=aa_fixed, mobile=aa_mobile)
+        aa_rmsd = float(b_structure.rmsd(aa_fixed, aa_aligned))
 
     ca_fixed = get_CAs(aa_fixed)
     ca_mobile = get_CAs(aa_mobile)
 
     ca_aligned, _ = b_structure.superimpose(fixed=ca_fixed, mobile=ca_mobile)
-    ca_rmsd = b_structure.rmsd(ca_fixed, ca_aligned)
+    ca_rmsd = float(b_structure.rmsd(ca_fixed, ca_aligned))
 
-    return float(aa_rmsd), float(ca_rmsd)
+    return aa_rmsd, ca_rmsd
+
+
+def safe_superimpose(
+    aa_fixed: AtomArray, aa_mobile: AtomArray, app_settings: AppSettings
+) -> AtomArray:
+    if app_settings.different_topologies:
+        aa_aligned, _, _, _ = b_structure.superimpose_homologs(
+            fixed=aa_fixed,
+            mobile=aa_mobile,
+        )
+    else:
+        aa_aligned, _ = b_structure.superimpose(
+            fixed=aa_fixed,
+            mobile=aa_mobile,
+        )
+    return aa_aligned

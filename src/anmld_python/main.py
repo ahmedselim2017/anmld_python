@@ -71,8 +71,9 @@ def process_inputs(
 
     elif aa_step.bonds.as_set() != aa_target.bonds.as_set():  # type: ignore
         logger.warning(
-            "The initial and target structures do not have the same topology"
+            "The initial and target structures do not have the same topology. Only C-alpha RMSDs will be calculated."
         )
+        app_settings.different_topologies = True
 
 
 def run_cycle(app_settings: AppSettings) -> list[dict]:
@@ -174,7 +175,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
 
         step_info["step"] = step
 
-        if (
+        if (not app_settings.different_topologies) and (
             step_info["aa_rmsd_target"]
             < app_settings.anmld_settings.early_stopping_aa_rmsd
         ):

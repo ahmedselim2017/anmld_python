@@ -14,7 +14,13 @@ import loguru
 import openmm as mm
 
 from anmld_python.settings import AppSettings, StepPathSettings
-from anmld_python.tools import calc_aa_ca_rmsd, get_CAs, get_atomarray, write_atomarray
+from anmld_python.tools import (
+    calc_aa_ca_rmsd,
+    get_CAs,
+    get_atomarray,
+    safe_superimpose,
+    write_atomarray,
+)
 
 
 def setup_sims(
@@ -102,7 +108,6 @@ def run_setup(
     PS = app_settings.path_settings
     MS = app_settings.openmm_settings
 
-
     pdb_init = mm_app.PDBFile(str(path_init))
     pdb_target = mm_app.PDBFile(str(path_target))
 
@@ -141,9 +146,11 @@ def run_setup(
     )
 
     ld_logger.debug("Aligning the minimized initial to the minimized target")
-    min_aligned_init_aa, _ = b_structure.superimpose(
-        fixed=min_target_aa,
-        mobile=min_init_aa,
+
+    min_aligned_init_aa = safe_superimpose(
+        aa_fixed=min_target_aa,
+        aa_mobile=min_init_aa,
+        app_settings=app_settings,
     )
 
     write_atomarray(
@@ -199,8 +206,16 @@ def run_ld_step(
         )
 
     ld_logger.debug("Aligning the LD result to the target")
-    ld_aligned_aa, _ = b_structure.superimpose(fixed=aa_target, mobile=ld_aa)
-    ld_aa_rmsd_target = b_structure.rmsd(aa_target, ld_aligned_aa)
+
+    ld_aligned_aa = safe_superimpose(
+        aa_fixed=aa_target,
+        aa_mobile=ld_aa,
+        app_settings=app_settings,
+    )
+
+    ld_aa_rmsd_target = None
+    if not app_settings.different_topologies:
+        ld_aa_rmsd_target = b_structure.rmsd(aa_target, ld_aligned_aa)
 
     ld_ca = get_CAs(ld_aa)
     target_ca = get_CAs(aa_target)
@@ -221,6 +236,7 @@ def run_ld_step(
     step_info["aa_rmsd_init"], step_info["ca_rmsd_init"] = calc_aa_ca_rmsd(
         aa_fixed=aa_init,
         aa_mobile=ld_aa,
+        app_settings=app_settings
     )
 
     msg = (

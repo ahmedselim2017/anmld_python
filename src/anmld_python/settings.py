@@ -12,7 +12,7 @@ from pydantic_settings import BaseSettings
 
 class SubprocessSettings(BaseModel):
     shell: bool = True
-    cwd: Optional[Path] = None
+    cwd: Optional[Path] = Field(None, init=False)
     check: bool = True
     executable: Path = Path("/bin/bash")
 
@@ -140,6 +140,7 @@ class ANMLDSettings(BaseSettings):
 
 
 
+
 class AppSettings(BaseSettings):
     logging_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = (
         "INFO"
@@ -147,9 +148,12 @@ class AppSettings(BaseSettings):
     mode_selection: Literal["ORIGINAL"] = "ORIGINAL"
     LD_method: Literal["AMBER", "OpenMM"] = "OpenMM"
 
+    different_topologies: bool = Field(False, init=False)
+
     anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")   # type: ignore
     amber_settings: AmberSettings = Field(AmberSettings(), alias="AMBER")   # type: ignore
     openmm_settings: OpenMMSettings = Field(OpenMMSettings(), alias="OpenMM")   # type: ignore
 
     path_settings: PathSettings = Field(PathSettings(), alias="PATHS")      # type: ignore
     subprocess_settings: SubprocessSettings = Field(SubprocessSettings(), alias="SUBPROCESS") # type:ignore
+
