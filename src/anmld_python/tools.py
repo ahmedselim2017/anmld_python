@@ -122,7 +122,7 @@ def sanitize_pdb(
     err = None
     fixer = pdbfixer.PDBFixer(
         filename=str(out_path),
-        platform=app_settings.openmm_settings.platform,
+        platform=app_settings.openmm_settings.platform_obj,
     )
     fixer.missingResidues = {}
     fixer.findMissingAtoms()
@@ -162,7 +162,7 @@ def sanitize_pdb(
                 logger.debug(f"Adding Hydrogens atoms to the structure {in_path}", i=i)
                 modeller.addHydrogens(
                     mm_forcefield,
-                    platform=app_settings.openmm_settings.platform,
+                    platform=app_settings.openmm_settings.platform_obj,
                 )
 
                 topology = modeller.getTopology()
