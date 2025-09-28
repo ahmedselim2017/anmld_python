@@ -8,8 +8,8 @@ You can run ANM-LD without installing locally using the Google Colab notebook:
 
 ---
 
-![anmld_method](anmld.png)
-![anmld_adk](anmld_adk.gif)
+<p align="center"><img src="figures/anmld.png"/></p>
+<p align="center"><img src="figures/anmld_aa1r.gif" height="250"/><img src="figures/anmld_adk.gif" height="250"/><img src="figures/anmld_serca.gif" height="250"/></p>
 
 ## Installation
 
