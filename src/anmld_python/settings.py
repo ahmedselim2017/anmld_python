@@ -5,7 +5,6 @@ from pydantic import (
     Field,
     PositiveInt,
     PositiveFloat,
-    NewPath,
     BaseModel
 )
 from pydantic_settings import BaseSettings
@@ -149,6 +148,7 @@ class AppSettings(BaseSettings):
     LD_method: Literal["AMBER", "OpenMM"] = "OpenMM"
 
     different_topologies: bool = Field(False, init=False)
+    sanitization_max_retry: int = 10
 
     anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")   # type: ignore
     amber_settings: AmberSettings = Field(AmberSettings(), alias="AMBER")   # type: ignore

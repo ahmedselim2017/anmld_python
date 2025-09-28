@@ -115,13 +115,29 @@ def sanitize_pdb(
     out_file.set_structure(aa)
     out_file.write(out_path)
 
-    fixer = pdbfixer.PDBFixer(filename=str(out_path))
-    fixer.missingResidues = {}
-    fixer.findMissingAtoms()
-    fixer.addMissingAtoms()
+    err = None
+    for i in range(app_settings.sanitization_max_retry):
+        try:
+            fixer = pdbfixer.PDBFixer(filename=str(out_path))
+            fixer.missingResidues = {}
+            fixer.findMissingAtoms()
+            fixer.addMissingAtoms()
 
-    topology = fixer.topology
-    positions = fixer.positions
+            topology = fixer.topology
+            positions = fixer.positions
+            break
+        except Exception as err:
+            logger.warning(
+                f"PDBFixer did not run successfully. Retrying ({i + 1}/app_settings.sanitization_max_retry)",
+                err=err,
+            )
+    else:
+        if err:
+            logger.error(
+                f"PDBFixer could not resolve clashes at the structure {in_path} while adding missing heavy atoms."
+                err=err,
+            )
+            raise err from None
 
     if app_settings.LD_method == "OpenMM":
         modeller = mm_app.Modeller(topology, positions)

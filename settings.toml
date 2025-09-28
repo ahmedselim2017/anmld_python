@@ -1,6 +1,7 @@
 logging_level = "INFO"
 mode_selection = "ORIGINAL"
 LD_method = "OpenMM"
+sanitization_max_retry = 10
 
 [ANMLD]
 n_steps = 100
