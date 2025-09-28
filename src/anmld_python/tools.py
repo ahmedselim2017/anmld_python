@@ -8,6 +8,7 @@ import biotite.structure.io.pdb as b_pdb
 import biotite.structure.io.pdbx as b_pdbx
 import fastpdb
 import numpy as np
+import openmm as mm
 import openmm.app as mm_app
 import pdbfixer
 
@@ -97,7 +98,9 @@ def sanitize_pdb(
     *args,
     **kwargs,
 ) -> AtomArray:
+    logger.debug("Loading atmarray")
     aa = get_atomarray(in_path, *args, **kwargs)
+    logger.debug("Loaded atmarray")
 
     chains = np.unique(aa.chain_id)
     if sel_chains:
@@ -108,6 +111,7 @@ def sanitize_pdb(
         aa = aa[np.isin(aa.chain_id, sel_chains)]
 
     # NOTE: other filters?
+    logger.debug("Filtering aminoacids")
     aa = aa[b_structure.filter_amino_acids(aa)]
 
     aa = aa[aa.element != "H"]
@@ -116,11 +120,16 @@ def sanitize_pdb(
     out_file.write(out_path)
 
     err = None
+    fixer = pdbfixer.PDBFixer(
+        filename=str(out_path),
+        platform=app_settings.openmm_settings.platform,
+    )
+    fixer.missingResidues = {}
+    fixer.findMissingAtoms()
     for i in range(app_settings.sanitization_max_retry):
+        logger.debug(f"Adding missing heavy atoms to the structure {in_path}", i=i)
         try:
-            fixer = pdbfixer.PDBFixer(filename=str(out_path))
-            fixer.missingResidues = {}
-            fixer.findMissingAtoms()
+            # Re-load structure s
             fixer.addMissingAtoms()
 
             topology = fixer.topology
@@ -128,7 +137,7 @@ def sanitize_pdb(
             break
         except Exception as err:
             logger.warning(
-                f"PDBFixer did not run successfully. Retrying ({i + 1}/app_settings.sanitization_max_retry)",
+                f"PDBFixer did not run successfully. Retrying ({i + 1}/{app_settings.sanitization_max_retry})",
                 err=err,
             )
     else:
@@ -138,6 +147,7 @@ def sanitize_pdb(
                 err=err,
             )
             raise err from None
+    logger.info(f"Added missing heavy atoms to the structure {in_path}")
 
     if app_settings.LD_method == "OpenMM":
         modeller = mm_app.Modeller(topology, positions)
@@ -146,10 +156,31 @@ def sanitize_pdb(
             app_settings.openmm_settings.forcefield,
             "implicit/hct.xml",  # AMBER igb=1
         )
-        modeller.addHydrogens(mm_forcefield)
+        err = None
+        for i in range(app_settings.sanitization_max_retry):
+            try:
+                logger.debug(f"Adding Hydrogens atoms to the structure {in_path}", i=i)
+                modeller.addHydrogens(
+                    mm_forcefield,
+                    platform=app_settings.openmm_settings.platform,
+                )
 
-        topology = modeller.getTopology()
-        positions = modeller.getPositions()
+                topology = modeller.getTopology()
+                positions = modeller.getPositions()
+                break
+            except mm.OpenMMException as err:
+                logger.warning(
+                    f"Could not add Hydrogens. Retrying ({i + 1}/{app_settings.sanitization_max_retry})",
+                    err=err,
+                )
+        else:
+            if err:
+                logger.error(
+                    f"Could not add Hydrogens to the structure {in_path}.",
+                    err=err,
+                )
+                raise err from None
+        logger.debug(f"Added Hydrogens atoms to the structure {in_path}")
 
     with open(out_path, "w") as out_file:
         mm_app.PDBFile.writeFile(topology, positions, out_file, keepIds=True)

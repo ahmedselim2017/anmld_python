@@ -8,6 +8,7 @@ from pydantic import (
     BaseModel
 )
 from pydantic_settings import BaseSettings
+from openmm import Platform
 
 class SubprocessSettings(BaseModel):
     shell: bool = True
@@ -124,6 +125,7 @@ class OpenMMSettings(BaseSettings):
     platform_name: Literal["CPU", "OpenCL", "CUDA", "HIP"] = Field(
         "CUDA", alias="platform"
     )
+    platform: Optional[Platform]  = Field(None, init=False)
 
 
 class ANMLDSettings(BaseSettings):
@@ -148,7 +150,7 @@ class AppSettings(BaseSettings):
     LD_method: Literal["AMBER", "OpenMM"] = "OpenMM"
 
     different_topologies: bool = Field(False, init=False)
-    sanitization_max_retry: int = 10
+    sanitization_max_retry: PositiveInt = 10
 
     anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")   # type: ignore
     amber_settings: AmberSettings = Field(AmberSettings(), alias="AMBER")   # type: ignore

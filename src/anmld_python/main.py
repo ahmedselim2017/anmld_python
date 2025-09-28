@@ -46,6 +46,18 @@ def process_inputs(
     PS.out_dir.mkdir(parents=True)
     logger.trace(f"Created output directory at {PS.out_dir}")
 
+
+    if app_settings.LD_method == "OpenMM":
+        import openmm as mm
+        MS = app_settings.openmm_settings
+        try:
+            MS.platform = mm.Platform.getPlatformByName(MS.platform_name)
+        except mm.OpenMMException:
+            logger.warning(
+                f"The given platform {MS.platform_name} is not found. Using the dafault platform."
+            )
+            MS.platform = None
+
     logger.info("Sanitizing the initial and target structures")
     aa_step = sanitize_pdb(
         in_path=path_abs_structure_init.absolute(),

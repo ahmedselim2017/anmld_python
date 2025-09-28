@@ -37,14 +37,6 @@ def setup_sims(
 
     MS = app_settings.openmm_settings
 
-    try:
-        platform = mm.Platform.getPlatformByName(MS.platform_name)
-    except mm.OpenMMException:
-        ld_logger.warning(
-            f"The given platform {MS.platform_name} is not found. Using the dafault platform."
-        )
-        platform = None
-
     mm_forcefield = mm_app.ForceField(
         MS.forcefield,
         "implicit/hct.xml",  # AMBER igb=1
@@ -72,7 +64,7 @@ def setup_sims(
         topology=topology,
         system=min_system,
         integrator=min_integrator,
-        platform=platform,
+        platform=MS.platform,
     )
 
     ld_system = mm_forcefield.createSystem(
@@ -92,7 +84,7 @@ def setup_sims(
         topology=topology,
         system=ld_system,
         integrator=ld_integrator,
-        platform=platform,
+        platform=MS.platform,
     )
 
     return min_simulation, ld_simulation
