@@ -51,12 +51,12 @@ def process_inputs(
         import openmm as mm
         MS = app_settings.openmm_settings
         try:
-            MS.platform = mm.Platform.getPlatformByName(MS.platform_name)
+            MS.platform_obj = mm.Platform.getPlatformByName(MS.platform_name)
         except mm.OpenMMException:
             logger.warning(
                 f"The given platform {MS.platform_name} is not found. Using the dafault platform."
             )
-            MS.platform = None
+            MS.platform_obj = None
 
     logger.info("Sanitizing the initial and target structures")
     aa_step = sanitize_pdb(

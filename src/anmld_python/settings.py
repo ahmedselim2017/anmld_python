@@ -125,7 +125,7 @@ class OpenMMSettings(BaseSettings):
     platform_name: Literal["CPU", "OpenCL", "CUDA", "HIP"] = Field(
         "CUDA", alias="platform"
     )
-    platform: Optional[Platform]  = Field(None, init=False)
+    platform_obj: Optional[Platform]  = Field(None, init=False)
 
 
 class ANMLDSettings(BaseSettings):

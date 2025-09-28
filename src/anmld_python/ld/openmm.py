@@ -64,7 +64,7 @@ def setup_sims(
         topology=topology,
         system=min_system,
         integrator=min_integrator,
-        platform=MS.platform,
+        platform=MS.platform_obj,
     )
 
     ld_system = mm_forcefield.createSystem(
@@ -84,7 +84,7 @@ def setup_sims(
         topology=topology,
         system=ld_system,
         integrator=ld_integrator,
-        platform=MS.platform,
+        platform=MS.platform_obj ,
     )
 
     return min_simulation, ld_simulation
