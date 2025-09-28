@@ -83,9 +83,8 @@ def generate_structures(
         Vy_step=Vy_step,
         Vz_step=Vz_step,
     )
-    step_logger.info(
-        f"Selected mode number: {sel_mode_idx + 1} Selected mode cosine sim: {sel_mode_cos_sim} "
-    )
+    step_logger.info(f"Selected mode number: {sel_mode_idx + 1}")
+    step_logger.debug(f"Selected mode cosine sim: {sel_mode_cos_sim}")
 
     sel_mode_sign = jnp.sign(sel_mode_cos_sim)
 

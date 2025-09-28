@@ -180,7 +180,7 @@ def sanitize_pdb(
                     err=err,
                 )
                 raise err from None
-        logger.debug(f"Added Hydrogens atoms to the structure {in_path}")
+        logger.info(f"Added Hydrogens atoms to the structure {in_path}")
 
     with open(out_path, "w") as out_file:
         mm_app.PDBFile.writeFile(topology, positions, out_file, keepIds=True)

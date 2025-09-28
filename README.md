@@ -1,5 +1,7 @@
 # ANM-LD: Predicting Conformational Transition Pathways with Intrinsic Dynamics
 
+![anmld](anmld.png)
+
 ## Running on Google Colab
 
 You can run ANM-LD without installing locally using the Google Colab notebook:
