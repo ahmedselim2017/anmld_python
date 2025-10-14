@@ -141,7 +141,7 @@ def sanitize_pdb(
                 err=err,
             )
     else:
-        if err:
+        if err: # type: ignore
             logger.error(
                 f"PDBFixer could not resolve clashes at the structure {in_path} while adding missing heavy atoms.",
                 err=err,

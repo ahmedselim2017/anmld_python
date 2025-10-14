@@ -46,9 +46,9 @@ def process_inputs(
     PS.out_dir.mkdir(parents=True)
     logger.trace(f"Created output directory at {PS.out_dir}")
 
-
     if app_settings.LD_method == "OpenMM":
         import openmm as mm
+
         MS = app_settings.openmm_settings
         try:
             MS.platform_obj = mm.Platform.getPlatformByName(MS.platform_name)
@@ -280,6 +280,56 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
     logger.info(f"Plotted cycle results.")
 
 
+def cleanup(app_settings: AppSettings):
+    PS = app_settings.path_settings
+
+    if app_settings.LD_method == "AMBER":
+        Path(PS.out_dir / PS.amber_min_in).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_sim_in).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_init_top).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_init_coord).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_target_top).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_target_coord).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_tleap_init_in).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_init_min_out).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_init_min_coord).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_init_min_rst).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_target_min_out).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_target_min_coord).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_target_min_rst).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_ptraj_rewrite_init_in).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_rewrite_init_min_rst).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_ptraj_align_target2initial_in).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_rms_target_align_dat).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_target_min_algn).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_initial_min_pdb).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_initial_min_c_pdb).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_target_min_pdb).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_pdb_target_min_c_pdb).unlink(missing_ok=True)
+
+    for step in range(app_settings.anmld_settings.n_steps):
+        step_paths = PS.step_path_settings.format_step(
+            step=step,
+            n_maxdigit=len(str(app_settings.anmld_settings.n_steps)),
+        )
+
+        if app_settings.LD_method == "OpenMM":
+            Path(PS.out_dir / step_paths.step_anm_pdb).unlink(missing_ok=True)
+        elif app_settings.LD_method == "AMBER":
+            Path(PS.out_dir / step_paths.step_amber_tleap_anm_pdb).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_top).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_coord).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_min_out).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_min_coord).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_min_rst).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_sim_out).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_sim_coord).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_sim_ener).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_sim_restart).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_ptraj_align_in).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_ptraj_rms_align_dat).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_ptraj_algn_restart).unlink(missing_ok=True)
+
 @logger.catch()
 def main(
     settings_path: Path,
@@ -322,6 +372,10 @@ def main(
     cycle_info = run_cycle(app_settings=app_settings)
 
     analyze(cycle_info=cycle_info, app_settings=app_settings)
+
+    if app_settings.cleanup:
+        cleanup(app_settings)
+
 
 
 def cli():

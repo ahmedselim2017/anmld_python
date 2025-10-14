@@ -26,15 +26,15 @@ def run_setup(
             dedent(f"""\
             ANMLD minimization, implicit solvent
              &cntrl
-              imin = 1,
+              imin = {AS.min.imin},
               maxcyc = {AS.min_step},
-              ncyc = 50,
-              ntmin = 1,
-              drms = 0.01,
-              cut = 1000.0,
-              ntb = 0,
-              saltcon = 0.1,
-              igb = 1,
+              ncyc = {AS.min.ncyc},
+              ntmin = {AS.min.ntmin},
+              drms = {AS.min.drms},
+              cut = {AS.min.cut},
+              ntb = {AS.min.ntb},
+              saltcon = {AS.min.saltcon},
+              igb = {AS.min.igb},
              &end
                    """)
         )
@@ -48,26 +48,26 @@ def run_setup(
             dedent(f"""\
             ANMLD targeted Langevin dynamics simulation
              &cntrl
-              imin = 0,
-              irest = 0,
-              ntx = 1,
-              ntt = 3,
-              gamma_ln = 5.0,
-              ig = -1,
+              imin = {AS.ld.imin},
+              irest = {AS.ld.irest},
+              ntx = {AS.ld.ntx},
+              ntt = {AS.ld.ntt},
+              gamma_ln = {AS.ld.gamma_ln},
+              ig = {AS.ld.ig},
               tempi = {AS.ld_temp},
               temp0 = {AS.ld_temp},
               nstlim = {AS.ld_step},
-              dt = 0.002,
-              ntc = 2,
-              ntf = 2,
-              ntwr = 1,
-              ntpr = 1,
-              ntwx = 1,
-              ntwe = 1,
-              igb = 1,
-              saltcon = 0.1,
-              ntb = 0,
-              cut = 1000.0,
+              dt = {AS.ld.dt},
+              ntc = {AS.ld.ntc},
+              ntf = {AS.ld.ntf},
+              ntwr = {AS.ld.ntwr},
+              ntpr = {AS.ld.ntpr},
+              ntwx = {AS.ld.ntwx},
+              ntwe = {AS.ld.ntwe},
+              igb = {AS.ld.igb},
+              saltcon = {AS.ld.saltcon},
+              ntb = {AS.ld.ntb},
+              cut = {AS.ld.cut},
              &end
                    """)
         )
@@ -360,10 +360,12 @@ def run_ld_step(
     step_info["aa_rmsd_target"], step_info["ca_rmsd_target"] = calc_aa_ca_rmsd(
         aa_fixed=aa_target,
         aa_mobile=ld_aa,
+        app_settings=app_settings
     )
     step_info["aa_rmsd_init"], step_info["ca_rmsd_init"] = calc_aa_ca_rmsd(
         aa_fixed=aa_init,
         aa_mobile=ld_aa,
+        app_settings=app_settings
     )
 
     msg = (

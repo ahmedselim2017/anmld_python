@@ -103,6 +103,35 @@ class PathSettings(BaseSettings):
     step_path_settings: StepPathSettings = Field(StepPathSettings() ,alias="STEP_PATHS")
 
 
+class AmberLDSettings(BaseSettings):
+    imin: int = 0
+    irest: int = 0
+    ntx: int = 1
+    ntt: int = 3
+    gamma_ln: float = 5.0
+    ig: int = -1
+    dt: float = 0.002
+    ntc: int = 2
+    ntf: int = 2
+    ntwr: int = 1
+    ntpr: int = 1
+    ntwx: int = 1
+    ntwe: int = 1
+    igb: int = 1
+    saltcon: float = 0.1
+    ntb: int = 0
+    cut: float = 1000.0
+
+
+class AmberMinSettings(BaseSettings):
+    imin: int = 1
+    ncyc: int = 50
+    ntmin: int = 1
+    drms: float = 0.01
+    cut: float = 1000.0
+    ntb: int = 0
+    saltcon: float = 0.1
+    igb: int = 1
 
 class AmberSettings(BaseSettings):
     ld_temp: PositiveFloat = Field(310)
@@ -112,6 +141,10 @@ class AmberSettings(BaseSettings):
     pmemd_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
     pmemd_cmd: str = "pmemd.cuda"
     ambertools_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
+
+    ld: AmberLDSettings = Field(AmberLDSettings(), alias="LD_EXPERT")
+    min: AmberMinSettings = Field(AmberMinSettings(), alias="MIN_EXPERT")
+
 
 class OpenMMSettings(BaseSettings):
     forcefield : str = Field("amber14/protein.ff14SB.xml")
@@ -141,13 +174,14 @@ class ANMLDSettings(BaseSettings):
 
 
 
-
 class AppSettings(BaseSettings):
     logging_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = (
         "INFO"
     )
     mode_selection: Literal["ORIGINAL"] = "ORIGINAL"
     LD_method: Literal["AMBER", "OpenMM"] = "OpenMM"
+
+    cleanup: bool = Field(False, alias="clean_temporary_files")
 
     different_topologies: bool = Field(False, init=False)
     sanitization_max_retry: PositiveInt = 10
