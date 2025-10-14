@@ -166,6 +166,8 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                 mm_min_sim=mm_min_sim,
                 mm_ld_sim=mm_ld_sim,
             )
+
+            aa_step = get_atomarray(PS.out_dir / step_paths.step_anmld_pdb)
         except NonConnectedStructureError:
             if step == 0:
                 raise ValueError("The given initial structure is not fully connected")
@@ -176,14 +178,13 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                 app_settings.anmld_settings.DF /= 2
                 continue
 
-        except LDError:
+        except (LDError, ValueError):
             ld_logger.warning(
                 f"The LD simulation returned an error. Halving the DF value to {app_settings.anmld_settings.DF / 2} and restarting the step"
             )
             app_settings.anmld_settings.DF /= 2
             continue
 
-        aa_step = get_atomarray(PS.out_dir / step_paths.step_anmld_pdb)
 
         step_info["step"] = step
 

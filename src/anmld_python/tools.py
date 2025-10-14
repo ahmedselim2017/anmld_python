@@ -124,6 +124,11 @@ def sanitize_pdb(
         filename=str(out_path),
         platform=app_settings.openmm_settings.platform_obj,
     )
+
+    logger.debug(f"Replacing nonstandard residues")
+    fixer.findNonstandardResidues()
+    fixer.replaceNonstandardResidues()
+
     fixer.missingResidues = {}
     fixer.findMissingAtoms()
     for i in range(app_settings.sanitization_max_retry):
@@ -148,6 +153,7 @@ def sanitize_pdb(
             )
             raise err from None
     logger.info(f"Added missing heavy atoms to the structure {in_path}")
+
 
     if app_settings.LD_method == "OpenMM":
         modeller = mm_app.Modeller(topology, positions)
