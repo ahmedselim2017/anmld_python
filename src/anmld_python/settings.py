@@ -175,9 +175,14 @@ class ANMLDSettings(BaseSettings):
 
 
 class AppSettings(BaseSettings):
-    logging_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = (
-        "INFO"
-    )
+    logging_level: Literal[
+        "TRACE",
+        "DEBUG",
+        "INFO",
+        "WARNING",
+        "ERROR",
+        "CRITICAL",
+    ] = "INFO"
     mode_selection: Literal["ORIGINAL"] = "ORIGINAL"
     LD_method: Literal["AMBER", "OpenMM"] = "OpenMM"
 
