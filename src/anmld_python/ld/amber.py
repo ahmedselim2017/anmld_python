@@ -2,13 +2,41 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 import subprocess
-from typing import Optional
 
-import biotite.structure as b_structure
 import loguru
 
 from anmld_python.settings import AppSettings, StepPathSettings
-from anmld_python.tools import calc_aa_ca_rmsd, get_CAs, get_atomarray
+from anmld_python.tools import calc_aa_ca_rmsd, get_atomarray
+
+
+class tleapError(Exception):
+    pass
+
+
+def run_pdb4amber(
+    in_path: Path,
+    out_path: Path,
+    logger: loguru.Logger,
+    app_settings: AppSettings,
+):
+    logger.trace("run_pdb4amber")
+
+    logger.trace("Finding pdb4amber")
+    result = subprocess.run(
+        app_settings.amber_settings.ambertools_prefix + "which pdb4amber",
+        **app_settings.subprocess_settings.__dict__,
+        capture_output=True,
+    )
+    pdb4amber_path = result.stdout.decode().strip()
+    logger.debug(f"pdb4amber path: {pdb4amber_path}")
+
+    cmd = f"python {pdb4amber_path} -i {in_path} -o {out_path} --reduce --dry"
+    logger.info("Running pdb4amber")
+    logger.debug(f"Running {app_settings.amber_settings.ambertools_prefix + cmd}")
+    subprocess.run(
+        app_settings.amber_settings.ambertools_prefix + cmd,
+        **app_settings.subprocess_settings.__dict__,
+    )
 
 
 def run_setup(
@@ -99,6 +127,20 @@ def run_setup(
         AS.ambertools_prefix + cmd_tleap,
         **app_settings.subprocess_settings.__dict__,
     )
+
+    if (
+        not (PS.out_dir / PS.amber_pdb_init_top).is_file()
+        or not (PS.out_dir / PS.amber_pdb_init_coord).is_file()
+        or not (PS.out_dir / PS.amber_pdb_target_top).is_file()
+        or not (PS.out_dir / PS.amber_pdb_target_coord).is_file()
+    ):
+        emsg = (
+            f"tleap command {cmd_tleap} failed to create output files."
+            f" {PS.amber_pdb_init_top}, {PS.amber_pdb_init_coord}"
+            f" {PS.amber_pdb_target_top}, {PS.amber_pdb_target_coord}"
+        )
+        ld_logger.critical(emsg)
+        raise tleapError().with_traceback(None) from None
 
     cmd_amber_initial = dedent(f"""\
                             $AMBERHOME/bin/{AS.pmemd_cmd} -O                        \\
@@ -268,6 +310,17 @@ def run_ld_step(
         **app_settings.subprocess_settings.__dict__,
     )
 
+    if (
+        not (PS.out_dir / SP.step_amber_top).is_file()
+        or not (PS.out_dir / SP.step_amber_coord).is_file()
+    ):
+        emsg = (
+            f"tleap command {cmd_tleap} failed to create output files."
+            f" {SP.step_amber_top} and {SP.step_amber_coord}"
+        )
+        ld_logger.critical(emsg)
+        raise tleapError().with_traceback(None) from None
+
     cmd_min = dedent(f"""\
                     $AMBERHOME/bin/{AS.pmemd_cmd} -O                    \\
                         -i "{PS.out_dir / PS.amber_min_in}"         \\
@@ -358,14 +411,10 @@ def run_ld_step(
 
     step_info = {}
     step_info["aa_rmsd_target"], step_info["ca_rmsd_target"] = calc_aa_ca_rmsd(
-        aa_fixed=aa_target,
-        aa_mobile=ld_aa,
-        app_settings=app_settings
+        aa_fixed=aa_target, aa_mobile=ld_aa, app_settings=app_settings
     )
     step_info["aa_rmsd_init"], step_info["ca_rmsd_init"] = calc_aa_ca_rmsd(
-        aa_fixed=aa_init,
-        aa_mobile=ld_aa,
-        app_settings=app_settings
+        aa_fixed=aa_init, aa_mobile=ld_aa, app_settings=app_settings
     )
 
     msg = (
@@ -373,7 +422,7 @@ def run_ld_step(
         f"target AA RMSD: {step_info['aa_rmsd_target']} "
         f"target C-alpha RMSD: {step_info['ca_rmsd_target']} "
         f"initial AA RMSD: {step_info['aa_rmsd_init']} "
-        f"initial C-alpha RMSD: {step_info['ca_rmsd_init']} "
+        f"initial C-alpha RMSD: {step_info['ca_rmsd_init']} ",
     )
 
     ld_logger.info(msg)

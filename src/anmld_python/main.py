@@ -19,7 +19,7 @@ from anmld_python.tools import (
     LDError,
     NonConnectedStructureError,
     get_atomarray,
-    sanitize_pdb,
+    sanitize_structure,
 )
 
 try:
@@ -31,6 +31,34 @@ except ModuleNotFoundError:
     pass
 
 
+def setup_logging(app_settings: AppSettings):
+    logger.remove()
+    logger_format = (
+        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+        "<level>{level: <8}</level> | "
+        "<level>STEP {extra[step]: <4}</level> | "
+        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+        "<level>{message}</level> | "
+        "<level>{extra}</level>"
+    )
+    logger.configure(extra={"step": -1})
+    logger.add(
+        lambda msg: tqdm.write(msg, end=""),
+        colorize=True,
+        level=app_settings.logging_level,
+        format=logger_format,
+    )
+    logger.add(
+        "trace.log",
+        colorize=False,
+        level="TRACE",
+        format=logger_format,
+    )
+
+    logger.info("Starting ANM-LD python")
+    logger.info(f"Version: {importlib.metadata.version('anmld_python')}")
+
+
 def process_inputs(
     path_abs_structure_init: Path,
     path_abs_structure_target: Path,
@@ -38,6 +66,7 @@ def process_inputs(
     chain_target: Optional[list[str]],
     app_settings: AppSettings,
 ):
+    logger.trace("Processing inputs")
     PS = app_settings.path_settings
     PS.out_dir = PS.out_dir.absolute()
 
@@ -52,21 +81,23 @@ def process_inputs(
         MS = app_settings.openmm_settings
         try:
             MS.platform_obj = mm.Platform.getPlatformByName(MS.platform_name)
+            logger.info(f"Set OpenMM platform to {MS.platform_name}")
         except mm.OpenMMException:
             logger.warning(
-                f"The given platform {MS.platform_name} is not found. Using the dafault platform."
+                f"The given platform {MS.platform_name} is not found."
+                " Using the dafault platform."
             )
             MS.platform_obj = None
 
     logger.info("Sanitizing the initial and target structures")
-    aa_step = sanitize_pdb(
+    aa_step = sanitize_structure(
         in_path=path_abs_structure_init.absolute(),
         out_path=PS.out_dir / PS.sanitized_init_structure,
         app_settings=app_settings,
         sel_chains=chain_init,
         include_bonds=True,
     )
-    aa_target = sanitize_pdb(
+    aa_target = sanitize_structure(
         in_path=path_abs_structure_target.absolute(),
         out_path=PS.out_dir / PS.sanitized_target_structure,
         app_settings=app_settings,
@@ -185,7 +216,6 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
             app_settings.anmld_settings.DF /= 2
             continue
 
-
         step_info["step"] = step
 
         if (not app_settings.different_topologies) and (
@@ -300,7 +330,9 @@ def cleanup(app_settings: AppSettings):
         Path(PS.out_dir / PS.amber_pdb_target_min_rst).unlink(missing_ok=True)
         Path(PS.out_dir / PS.amber_ptraj_rewrite_init_in).unlink(missing_ok=True)
         Path(PS.out_dir / PS.amber_pdb_rewrite_init_min_rst).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_ptraj_align_target2initial_in).unlink(missing_ok=True)
+        Path(PS.out_dir / PS.amber_ptraj_align_target2initial_in).unlink(
+            missing_ok=True
+        )
         Path(PS.out_dir / PS.amber_rms_target_align_dat).unlink(missing_ok=True)
         Path(PS.out_dir / PS.amber_target_min_algn).unlink(missing_ok=True)
         Path(PS.out_dir / PS.amber_pdb_initial_min_pdb).unlink(missing_ok=True)
@@ -317,7 +349,9 @@ def cleanup(app_settings: AppSettings):
         if app_settings.LD_method == "OpenMM":
             Path(PS.out_dir / step_paths.step_anm_pdb).unlink(missing_ok=True)
         elif app_settings.LD_method == "AMBER":
-            Path(PS.out_dir / step_paths.step_amber_tleap_anm_pdb).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_tleap_anm_pdb).unlink(
+                missing_ok=True
+            )
             Path(PS.out_dir / step_paths.step_amber_top).unlink(missing_ok=True)
             Path(PS.out_dir / step_paths.step_amber_coord).unlink(missing_ok=True)
             Path(PS.out_dir / step_paths.step_amber_min_out).unlink(missing_ok=True)
@@ -327,11 +361,17 @@ def cleanup(app_settings: AppSettings):
             Path(PS.out_dir / step_paths.step_amber_sim_coord).unlink(missing_ok=True)
             Path(PS.out_dir / step_paths.step_amber_sim_ener).unlink(missing_ok=True)
             Path(PS.out_dir / step_paths.step_amber_sim_restart).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_ptraj_align_in).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_ptraj_rms_align_dat).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_ptraj_algn_restart).unlink(missing_ok=True)
+            Path(PS.out_dir / step_paths.step_amber_ptraj_align_in).unlink(
+                missing_ok=True
+            )
+            Path(PS.out_dir / step_paths.step_amber_ptraj_rms_align_dat).unlink(
+                missing_ok=True
+            )
+            Path(PS.out_dir / step_paths.step_amber_ptraj_algn_restart).unlink(
+                missing_ok=True
+            )
 
-@logger.catch()
+
 def main(
     settings_path: Path,
     path_abs_structure_init: Path,
@@ -342,25 +382,7 @@ def main(
     with open(settings_path, "rb") as settings_f:
         app_settings = AppSettings(**tomllib.load(settings_f))
 
-    logger.remove()
-    logger_format = (
-        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-        "<level>{level: <8}</level> | "
-        "<level>STEP {extra[step]: <4}</level> | "
-        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-        "<level>{message}</level> | "
-        "<level>{extra}</level>"
-    )
-    logger.configure(extra={"step": -1})
-    logger.add(
-        lambda msg: tqdm.write(msg, end=""),
-        colorize=True,
-        level=app_settings.logging_level,
-        format=logger_format,
-    )
-
-    logger.info("Starting ANM-LD python.")
-    logger.info(f"Version: {importlib.metadata.version('anmld_python')}")
+    setup_logging(app_settings=app_settings)
 
     process_inputs(
         path_abs_structure_init=path_abs_structure_init,
@@ -378,11 +400,10 @@ def main(
         cleanup(app_settings)
 
 
-
 def cli():
-    app = typer.Typer(pretty_exceptions_show_locals=False)
+    app = typer.Typer(pretty_exceptions_show_locals=False, add_completion=False)
     app.command()(main)
-    app()
+    app(standalone_mode=True)
 
 
 if __name__ == "__main__":

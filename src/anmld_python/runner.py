@@ -69,6 +69,7 @@ def run_step(
     pred_file.set_structure(pred_aa)
     pred_file.write(pred_abs_path)
     step_logger.debug(f"Wrote raw step coordinates to {pred_abs_path}")
+    breakpoint()
 
     match app_settings.LD_method:
         case "OpenMM":

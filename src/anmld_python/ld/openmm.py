@@ -12,6 +12,7 @@ import biotite.structure as b_structure
 
 import loguru
 import openmm as mm
+import openmm.app as mm_app
 
 from anmld_python.settings import AppSettings, StepPathSettings
 from anmld_python.tools import (
@@ -21,6 +22,47 @@ from anmld_python.tools import (
     safe_superimpose,
     write_atomarray,
 )
+
+
+def add_H(
+    topology: mm_app.Topology,
+    positions: list,
+    sanitization_logger: loguru.Logger,
+    app_settings: AppSettings,
+):
+    sanitization_logger.trace("Running add_H")
+
+    modeller = mm_app.Modeller(topology, positions)
+
+    mm_forcefield = mm_app.ForceField(
+        app_settings.openmm_settings.forcefield,
+        "implicit/hct.xml",  # AMBER igb=1
+    )
+    err = None
+    sanitization_logger.info("Adding Hydrogens with OpenMM")
+    for i in range(app_settings.sanitization_max_retry):
+        try:
+            modeller.addHydrogens(
+                mm_forcefield,
+                platform=app_settings.openmm_settings.platform_obj,
+            )
+        except mm.OpenMMException as err:
+            sanitization_logger.warning(
+                f"Could not add Hydrogens."
+                f" Retrying ({i + 1}/{app_settings.sanitization_max_retry})",
+                err=err,
+            )
+    else:
+        if err:  # type: ignore
+            sanitization_logger.critical(
+                f"Could not add Hydrogens",
+                " due to clashes in the structure.",
+                err=err,
+            )
+            raise err from None
+    sanitization_logger.info(f"Added Hydrogens atoms")
+
+    return modeller.getTopology(), modeller.getPositions()
 
 
 def setup_sims(
@@ -84,7 +126,7 @@ def setup_sims(
         topology=topology,
         system=ld_system,
         integrator=ld_integrator,
-        platform=MS.platform_obj ,
+        platform=MS.platform_obj,
     )
 
     return min_simulation, ld_simulation
@@ -226,9 +268,7 @@ def run_ld_step(
         "ca_rmsd_target": ld_ca_rmsd_target,
     }
     step_info["aa_rmsd_init"], step_info["ca_rmsd_init"] = calc_aa_ca_rmsd(
-        aa_fixed=aa_init,
-        aa_mobile=ld_aa,
-        app_settings=app_settings
+        aa_fixed=aa_init, aa_mobile=ld_aa, app_settings=app_settings
     )
 
     msg = (

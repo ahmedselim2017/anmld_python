@@ -1,5 +1,7 @@
+from __future__ import annotations
 from pathlib import Path
 from typing import Optional, cast
+import tempfile
 
 from biotite.structure.atoms import AtomArray
 from loguru import logger
@@ -7,8 +9,8 @@ import biotite.structure as b_structure
 import biotite.structure.io.pdb as b_pdb
 import biotite.structure.io.pdbx as b_pdbx
 import fastpdb
+import loguru
 import numpy as np
-import openmm as mm
 import openmm.app as mm_app
 import pdbfixer
 
@@ -79,7 +81,8 @@ def get_atomarray(
             )
         case _:
             emsg = f"Given structure file {structure_path} is not supported."
-            raise ValueError(emsg)
+            logger.critical(emsg)
+            raise ValueError(emsg) from None
 
     return cast(AtomArray, atomarray)
 
@@ -90,7 +93,77 @@ def get_CAs(aa: AtomArray) -> AtomArray:
     return cas
 
 
-def sanitize_pdb(
+def _filter_atomarray(
+    aa: AtomArray,
+    sel_chains: Optional[list[str]],
+    sanitization_logger: loguru.Logger,
+) -> AtomArray:
+    sanitization_logger.trace("Filtering atomarray")
+
+    sanitization_logger.info("Filtering chains")
+    chains = b_structure.get_chains(aa)
+    if sel_chains:
+        if not np.all(np.isin(sel_chains, chains)):
+            emsg = f"The given {sel_chains=} does not exists"
+            sanitization_logger.critical(emsg)
+            raise ValueError(emsg) from None
+        aa = aa[np.isin(aa.chain_id, sel_chains)]
+
+    sanitization_logger.info("Filtering aminoacids")
+    aa = aa[b_structure.filter_amino_acids(aa)]
+
+    # TODO: make removing or using current H an option
+    sanitization_logger.info("Removing hydrogens")
+    aa = aa[aa.element != "H"]
+
+    return aa
+
+
+def _run_pdbfixer(
+    structure_path: Path,
+    sanitization_logger: loguru.Logger,
+    app_settings: AppSettings,
+) -> tuple[mm_app.Topology, list]:
+    sanitization_logger.trace("Running PDBFixer")
+
+    fixer = pdbfixer.PDBFixer(
+        filename=str(structure_path.absolute()),
+        platform=app_settings.openmm_settings.platform_obj,
+    )
+
+    sanitization_logger.info(f"Replacing nonstandard residues")
+    fixer.findNonstandardResidues()
+    fixer.replaceNonstandardResidues()
+
+    sanitization_logger.info("Adding missing heavy atoms")
+    fixer.missingResidues = {}
+    fixer.findMissingAtoms()
+    err = None
+    for i in range(app_settings.sanitization_max_retry):
+        try:
+            fixer.addMissingAtoms()
+            break
+        except Exception as err:
+            sanitization_logger.warning(
+                "PDBFixer could not add missing heavy atoms"
+                " due to clashes in the structure."
+                f" Retrying ({i + 1}/{app_settings.sanitization_max_retry})",
+                err=err,
+            )
+    else:
+        if err:  # type: ignore
+            sanitization_logger.critical(
+                "PDBFixer could not add missing heavy atoms",
+                " due to clashes in the structure.",
+                err=err,
+            )
+            raise err from None
+    sanitization_logger.info(f"Added missing heavy atoms")
+
+    return fixer.topology, fixer.positions
+
+
+def sanitize_structure(
     in_path: Path,
     out_path: Path,
     app_settings: AppSettings,
@@ -98,98 +171,54 @@ def sanitize_pdb(
     *args,
     **kwargs,
 ) -> AtomArray:
-    logger.debug("Loading atmarray")
+    sanitization_logger = logger.bind(in_path=in_path, out_path=out_path)
+    sanitization_logger.trace("Sanitizing structure")
+
+    sanitization_logger.debug("Loading atomarray")
     aa = get_atomarray(in_path, *args, **kwargs)
-    logger.debug("Loaded atmarray")
 
-    chains = np.unique(aa.chain_id)
-    if sel_chains:
-        if not np.all(np.isin(sel_chains, chains)):
-            raise ValueError(
-                f"The given {sel_chains=} does not exists in the structure at {in_path.absolute()}."
-            )
-        aa = aa[np.isin(aa.chain_id, sel_chains)]
+    aa = _filter_atomarray(
+        aa=aa,
+        sel_chains=sel_chains,
+        sanitization_logger=sanitization_logger,
+    )
 
-    # NOTE: other filters?
-    logger.debug("Filtering aminoacids")
-    aa = aa[b_structure.filter_amino_acids(aa)]
-
-    aa = aa[aa.element != "H"]
     out_file = fastpdb.PDBFile()
     out_file.set_structure(aa)
     out_file.write(out_path)
 
-    err = None
-    fixer = pdbfixer.PDBFixer(
-        filename=str(out_path),
-        platform=app_settings.openmm_settings.platform_obj,
+    topology, positions = _run_pdbfixer(
+        structure_path=out_path,
+        sanitization_logger=sanitization_logger,
+        app_settings=app_settings,
     )
 
-    logger.debug(f"Replacing nonstandard residues")
-    fixer.findNonstandardResidues()
-    fixer.replaceNonstandardResidues()
-
-    fixer.missingResidues = {}
-    fixer.findMissingAtoms()
-    for i in range(app_settings.sanitization_max_retry):
-        logger.debug(f"Adding missing heavy atoms to the structure {in_path}", i=i)
-        try:
-            # Re-load structure s
-            fixer.addMissingAtoms()
-
-            topology = fixer.topology
-            positions = fixer.positions
-            break
-        except Exception as err:
-            logger.warning(
-                f"PDBFixer did not run successfully. Retrying ({i + 1}/{app_settings.sanitization_max_retry})",
-                err=err,
-            )
-    else:
-        if err: # type: ignore
-            logger.error(
-                f"PDBFixer could not resolve clashes at the structure {in_path} while adding missing heavy atoms.",
-                err=err,
-            )
-            raise err from None
-    logger.info(f"Added missing heavy atoms to the structure {in_path}")
-
-
     if app_settings.LD_method == "OpenMM":
-        modeller = mm_app.Modeller(topology, positions)
+        import anmld_python.ld.openmm
 
-        mm_forcefield = mm_app.ForceField(
-            app_settings.openmm_settings.forcefield,
-            "implicit/hct.xml",  # AMBER igb=1
+        topology, positions = anmld_python.ld.openmm.add_H(
+            topology=topology,
+            positions=positions,
+            sanitization_logger=sanitization_logger,
+            app_settings=app_settings,
         )
-        err = None
-        for i in range(app_settings.sanitization_max_retry):
-            try:
-                logger.debug(f"Adding Hydrogens atoms to the structure {in_path}", i=i)
-                modeller.addHydrogens(
-                    mm_forcefield,
-                    platform=app_settings.openmm_settings.platform_obj,
-                )
+        with open(out_path, "w") as out_file:
+            mm_app.PDBFile.writeFile(topology, positions, out_file, keepIds=True)
 
-                topology = modeller.getTopology()
-                positions = modeller.getPositions()
-                break
-            except mm.OpenMMException as err:
-                logger.warning(
-                    f"Could not add Hydrogens. Retrying ({i + 1}/{app_settings.sanitization_max_retry})",
-                    err=err,
-                )
-        else:
-            if err:
-                logger.error(
-                    f"Could not add Hydrogens to the structure {in_path}.",
-                    err=err,
-                )
-                raise err from None
-        logger.info(f"Added Hydrogens atoms to the structure {in_path}")
+    elif app_settings.LD_method == "AMBER":
+        import anmld_python.ld.amber
+        import tempfile
 
-    with open(out_path, "w") as out_file:
-        mm_app.PDBFile.writeFile(topology, positions, out_file, keepIds=True)
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".cif") as tempf:
+            mm_app.PDBFile.writeFile(topology, positions, tempf, keepIds=True)
+
+            logger.success("lol")
+            anmld_python.ld.amber.run_pdb4amber(
+                in_path=in_path,
+                out_path=out_path,
+                logger=sanitization_logger,
+                app_settings=app_settings,
+            )
 
     aa = get_atomarray(out_path, *args, **kwargs)
 
