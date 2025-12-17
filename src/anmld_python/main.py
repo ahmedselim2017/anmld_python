@@ -1,4 +1,5 @@
 from __future__ import annotations
+from biotite.structure.io import load_structure
 from loguru import logger
 from pathlib import Path
 from typing import Optional
@@ -18,7 +19,6 @@ from anmld_python.settings import AppSettings
 from anmld_python.tools import (
     LDError,
     NonConnectedStructureError,
-    get_atomarray,
     sanitize_structure,
 )
 
@@ -49,7 +49,7 @@ def setup_logging(app_settings: AppSettings):
         format=logger_format,
     )
     logger.add(
-        "trace.log",
+        app_settings.path_settings.out_dir / "trace.log",
         colorize=False,
         level="TRACE",
         format=logger_format,
@@ -167,12 +167,18 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                         app_settings=app_settings,
                     )
 
-                    aa_step = get_atomarray(PS.out_dir / PS.openmm_min_aligned_init_pdb)
-                    aa_target = get_atomarray(PS.out_dir / PS.openmm_min_target_pdb)
+                    aa_step = load_structure(
+                        str(PS.out_dir / PS.openmm_min_aligned_init_pdb)
+                    )
+                    aa_target = load_structure(
+                        str(PS.out_dir / PS.openmm_min_target_pdb)
+                    )
                 case "AMBER":
                     from anmld_python.ld.amber import run_setup
 
-                    aa_step = get_atomarray(PS.out_dir / PS.sanitized_init_structure)
+                    aa_step = load_structure(
+                        str(PS.out_dir / PS.sanitized_init_structure)
+                    )
 
                     resnum = np.unique(aa_step.res_id).size  # type: ignore
                     run_setup(
@@ -183,8 +189,14 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                         app_settings=app_settings,
                     )
 
-                    aa_step = get_atomarray(PS.out_dir / PS.amber_pdb_initial_min_pdb)
-                    aa_target = get_atomarray(PS.out_dir / PS.amber_pdb_target_min_pdb)
+                    # FIXME
+                    try:
+                        aa_step = load_structure(str(PS.out_dir / PS.amber_pdb_initial_min_pdb))
+                        aa_target = load_structure(
+                            str(PS.out_dir / PS.amber_pdb_target_min_pdb)
+                        )
+                    except Exception:
+                        breakpoint()
 
         try:
             step_info = run_step(
@@ -198,23 +210,26 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                 mm_ld_sim=mm_ld_sim,
             )
 
-            aa_step = get_atomarray(PS.out_dir / step_paths.step_anmld_pdb)
         except NonConnectedStructureError:
             if step == 0:
                 raise ValueError("The given initial structure is not fully connected")
             else:
                 ld_logger.warning(
-                    f"ANM deformation produced a non-connected structure. Halving the DF value to {app_settings.anmld_settings.DF / 2} and restarting the step"
+                    "ANM deformation produced a non-connected structure."
+                    " Halving the DF value to"
+                    f" {app_settings.anmld_settings.DF / 2} and restarting the step"
                 )
                 app_settings.anmld_settings.DF /= 2
                 continue
 
         except (LDError, ValueError):
             ld_logger.warning(
-                f"The LD simulation returned an error. Halving the DF value to {app_settings.anmld_settings.DF / 2} and restarting the step"
+                f"The LD simulation returned an error. Halving the DF value to"
+                f" {app_settings.anmld_settings.DF / 2} and restarting the step"
             )
             app_settings.anmld_settings.DF /= 2
             continue
+        aa_step = load_structure(str(PS.out_dir / step_paths.step_anmld_pdb))
 
         step_info["step"] = step
 

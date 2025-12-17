@@ -1,14 +1,11 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import Optional, cast
-import tempfile
 
-from biotite.structure.atoms import AtomArray
+from biotite.structure.atoms import AtomArray, AtomArrayStack
+from biotite.structure.io import load_structure, save_structure
 from loguru import logger
 import biotite.structure as b_structure
-import biotite.structure.io.pdb as b_pdb
-import biotite.structure.io.pdbx as b_pdbx
-import fastpdb
 import loguru
 import numpy as np
 import openmm.app as mm_app
@@ -23,68 +20,6 @@ class LDError(Exception):
 
 class NonConnectedStructureError(Exception):
     pass
-
-
-def write_atomarray(aa: AtomArray, out_path: Path):
-    match out_path.suffix:
-        case ".pdb":
-            pdb_file = fastpdb.PDBFile()
-            pdb_file.set_structure(aa)
-            pdb_file.write(out_path)
-        case ".cif":
-            cif_file = b_pdbx.CIFFile()
-            b_pdbx.set_structure(cif_file, aa)
-            cif_file.write(out_path)
-
-
-def get_atomarray(
-    structure_path: Path,
-    structure_index: int = 0,
-    extra_fields: Optional[list | str] = None,
-    *args,
-    **kwargs,
-) -> AtomArray:
-    if not extra_fields:
-        extra_fields = []
-
-    match structure_path.suffix:
-        case ".pdb":
-            # fastpdb might panic while loading bonds
-            # https://github.com/biotite-dev/fastpdb/pull/25
-            try:
-                structure_file = fastpdb.PDBFile.read(structure_path)
-                atomarray = structure_file.get_structure(
-                    extra_fields=extra_fields,
-                    model=structure_index + 1,
-                    *args,
-                    **kwargs,
-                )
-            except BaseException:
-                logger.warning(
-                    "fastpdb panicked while loading the structure, using biotite to load the structure."
-                )
-                structure_file = b_pdb.PDBFile.read(structure_path)
-                atomarray = structure_file.get_structure(
-                    extra_fields=extra_fields,
-                    model=structure_index + 1,
-                    *args,
-                    **kwargs,
-                )
-        case ".cif":
-            structure_file = b_pdbx.CIFFile.read(structure_path)
-            atomarray = b_pdbx.get_structure(
-                structure_file,
-                model=structure_index - 1,
-                extra_fields=extra_fields,
-                *args,
-                **kwargs,
-            )
-        case _:
-            emsg = f"Given structure file {structure_path} is not supported."
-            logger.critical(emsg)
-            raise ValueError(emsg) from None
-
-    return cast(AtomArray, atomarray)
 
 
 def get_CAs(aa: AtomArray) -> AtomArray:
@@ -175,7 +110,11 @@ def sanitize_structure(
     sanitization_logger.trace("Sanitizing structure")
 
     sanitization_logger.debug("Loading atomarray")
-    aa = get_atomarray(in_path, *args, **kwargs)
+    aa = load_structure(file_path=str(in_path), *args, **kwargs)
+    if isinstance(aa, AtomArrayStack):
+        emsg = "The structure file include more than one models"
+        sanitization_logger.critical(emsg)
+        raise Exception(emsg)
 
     aa = _filter_atomarray(
         aa=aa,
@@ -183,17 +122,16 @@ def sanitize_structure(
         sanitization_logger=sanitization_logger,
     )
 
-    out_file = fastpdb.PDBFile()
-    out_file.set_structure(aa)
-    out_file.write(out_path)
-
-    topology, positions = _run_pdbfixer(
-        structure_path=out_path,
-        sanitization_logger=sanitization_logger,
-        app_settings=app_settings,
-    )
+    tmp_path = in_path.with_stem(in_path.stem + "_tmp")
+    save_structure(file_path=str(tmp_path), array=aa)
 
     if app_settings.LD_method == "OpenMM":
+        topology, positions = _run_pdbfixer(
+            structure_path=tmp_path,
+            sanitization_logger=sanitization_logger,
+            app_settings=app_settings,
+        )
+
         import anmld_python.ld.openmm
 
         topology, positions = anmld_python.ld.openmm.add_H(
@@ -207,20 +145,16 @@ def sanitize_structure(
 
     elif app_settings.LD_method == "AMBER":
         import anmld_python.ld.amber
-        import tempfile
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".cif") as tempf:
-            mm_app.PDBFile.writeFile(topology, positions, tempf, keepIds=True)
+        anmld_python.ld.amber.run_pdb4amber(
+            in_path=tmp_path,
+            out_path=out_path,
+            logger=sanitization_logger,
+            app_settings=app_settings,
+        )
 
-            logger.success("lol")
-            anmld_python.ld.amber.run_pdb4amber(
-                in_path=in_path,
-                out_path=out_path,
-                logger=sanitization_logger,
-                app_settings=app_settings,
-            )
-
-    aa = get_atomarray(out_path, *args, **kwargs)
+    aa = load_structure(file_path=str(out_path), *args, **kwargs)
+    tmp_path.unlink()
 
     return aa
 

@@ -141,6 +141,8 @@ class AmberSettings(BaseSettings):
     pmemd_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
     pmemd_cmd: str = "pmemd.cuda"
     ambertools_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
+    pdb4amber_cmd: str = "pdb4amber"
+    pdb4amber_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
 
     ld: AmberLDSettings = Field(AmberLDSettings(), alias="LD_EXPERT")
     min: AmberMinSettings = Field(AmberMinSettings(), alias="MIN_EXPERT")

@@ -1,7 +1,8 @@
 logging_level = "INFO"
-clean_temporary_files = false
 mode_selection = "ORIGINAL"
 LD_method = "OpenMM"
+clean_temporary_files = false
+different_topologies = false
 sanitization_max_retry = 10
 
 [ANMLD]
@@ -22,6 +23,8 @@ forcefield = "leaprc.protein.ff14SB"
 pmemd_prefix = "module load cuda/11.3 && module load amber/22_20231219 && "
 pmemd_cmd = "pmemd.cuda"
 ambertools_prefix = "module load cuda/11.3 && module load amber/22_20231219 && "
+pdb4amber_cmd = "pdb4amber"
+pdb4amber_prefix = "module load cuda/11.3 && module load amber/22_20231219 && "
 
 [OpenMM]
 forcefield = "amber14/protein.ff14SB.xml"
@@ -33,8 +36,8 @@ save_ld = false
 platform = "CUDA"
 
 [PATHS]
-out_dir = "out"
-info_csv = "run_info.csv"
+out_dir = "anmld_out"
+info_csv = "info.csv"
 info_rmsd_fig = "info_RMSDs.pdf"
 info_sel_modes_fig = "info_sel_modes.pdf"
 sanitized_init_structure = "sanitized_init.pdb"
@@ -69,6 +72,35 @@ amber_pdb_target_min_c_pdb = "AMBER_pdb_target_min_C.pdb"
 shell = true
 check = true
 executable = "/bin/bash"
+
+[AMBER.LD_EXPERT]
+imin = 0
+irest = 0
+ntx = 1
+ntt = 3
+gamma_ln = 5.0
+ig = -1
+dt = 0.002
+ntc = 2
+ntf = 2
+ntwr = 1
+ntpr = 1
+ntwx = 1
+ntwe = 1
+igb = 1
+saltcon = 0.1
+ntb = 0
+cut = 1000.0
+
+[AMBER.MIN_EXPERT]
+imin = 1
+ncyc = 50
+ntmin = 1
+drms = 0.01
+cut = 1000.0
+ntb = 0
+saltcon = 0.1
+igb = 1
 
 [PATHS.STEP_PATHS]
 step_anm_pdb = "STEP_{step}_ANM.pdb"

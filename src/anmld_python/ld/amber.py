@@ -3,10 +3,11 @@ from pathlib import Path
 from textwrap import dedent
 import subprocess
 
+from biotite.structure.io import load_structure
 import loguru
 
 from anmld_python.settings import AppSettings, StepPathSettings
-from anmld_python.tools import calc_aa_ca_rmsd, get_atomarray
+from anmld_python.tools import LDError, calc_aa_ca_rmsd
 
 
 class tleapError(Exception):
@@ -21,22 +22,36 @@ def run_pdb4amber(
 ):
     logger.trace("run_pdb4amber")
 
-    logger.trace("Finding pdb4amber")
-    result = subprocess.run(
-        app_settings.amber_settings.ambertools_prefix + "which pdb4amber",
-        **app_settings.subprocess_settings.__dict__,
-        capture_output=True,
+    cmd = (
+        app_settings.amber_settings.pdb4amber_prefix
+        + app_settings.amber_settings.pdb4amber_cmd
     )
-    pdb4amber_path = result.stdout.decode().strip()
-    logger.debug(f"pdb4amber path: {pdb4amber_path}")
 
-    cmd = f"python {pdb4amber_path} -i {in_path} -o {out_path} --reduce --dry"
+    cmd += f" -i {in_path} -o {out_path} --reduce --dry"
     logger.info("Running pdb4amber")
     logger.debug(f"Running {app_settings.amber_settings.ambertools_prefix + cmd}")
     subprocess.run(
         app_settings.amber_settings.ambertools_prefix + cmd,
         **app_settings.subprocess_settings.__dict__,
     )
+
+
+def check_pmemd_out(out_path: Path, logger: loguru.Logger):
+    """
+    As pmemd can fail with a successful exit code, its output must be checked
+    additionally.
+    """
+    logger.trace("Checking pmemd output", out_path=out_path)
+    with open(out_path, "r") as f:
+        out_content = f.read()
+    results = out_content.split("                    FINAL RESULTS")[-1]
+
+    # TODO: A less hacky way to check failiure?
+    keywords = ["*************", "FAILURE", "Indef", "NaN", "Infinity"]
+    for keyword in keywords:
+        if keyword in results:
+            return False
+    return True
 
 
 def run_setup(
@@ -139,7 +154,7 @@ def run_setup(
             f" {PS.amber_pdb_init_top}, {PS.amber_pdb_init_coord}"
             f" {PS.amber_pdb_target_top}, {PS.amber_pdb_target_coord}"
         )
-        ld_logger.critical(emsg)
+        ld_logger.error(emsg)
         raise tleapError().with_traceback(None) from None
 
     cmd_amber_initial = dedent(f"""\
@@ -166,6 +181,10 @@ def run_setup(
         AS.pmemd_prefix + cmd_amber_initial,
         **app_settings.subprocess_settings.__dict__,
     )
+    if not check_pmemd_out(PS.out_dir / PS.amber_pdb_init_min_out, ld_logger):
+        emsg = "The pmemd minimization of the initial structure failed."
+        ld_logger.error(emsg)
+        raise LDError(emsg) from None
 
     ld_logger.info("Running pmemd min for the target structure")
     ld_logger.debug("Running {cmd}", cmd=AS.pmemd_prefix + cmd_amber_target)
@@ -173,6 +192,10 @@ def run_setup(
         AS.pmemd_prefix + cmd_amber_target,
         **app_settings.subprocess_settings.__dict__,
     )
+    if not check_pmemd_out(PS.out_dir / PS.amber_pdb_target_min_out, ld_logger):
+        emsg = "The pmemd minimization of the target structure failed."
+        ld_logger.error(emsg)
+        raise LDError(emsg) from None
 
     # create initial_min.rst (rewrite to be able to read by ambmsk,
     # version problem)
@@ -318,7 +341,7 @@ def run_ld_step(
             f"tleap command {cmd_tleap} failed to create output files."
             f" {SP.step_amber_top} and {SP.step_amber_coord}"
         )
-        ld_logger.critical(emsg)
+        ld_logger.error(emsg)
         raise tleapError().with_traceback(None) from None
 
     cmd_min = dedent(f"""\
@@ -336,6 +359,10 @@ def run_ld_step(
         AS.pmemd_prefix + cmd_min,
         **app_settings.subprocess_settings.__dict__,
     )
+    if not check_pmemd_out(PS.out_dir / SP.step_amber_min_out, ld_logger):
+        emsg = "The pmemd minimization of the structure failed."
+        ld_logger.error(emsg)
+        raise LDError(emsg) from None
 
     cmd_sim = dedent(f"""\
                     $AMBERHOME/bin/{AS.pmemd_cmd} -O                        \\
@@ -353,6 +380,10 @@ def run_ld_step(
         AS.pmemd_prefix + cmd_sim,
         **app_settings.subprocess_settings.__dict__,
     )
+    if not check_pmemd_out(PS.out_dir / SP.step_amber_sim_out, ld_logger):
+        emsg = "The pmemd simulation of the structure failed."
+        ld_logger.error(emsg)
+        raise LDError(emsg) from None
 
     with open(
         PS.out_dir / SP.step_amber_ptraj_align_in, "w"
@@ -405,9 +436,9 @@ def run_ld_step(
         )
 
     ld_logger.debug("Aligning the LD result to the target")
-    ld_aa = get_atomarray(PS.out_dir / SP.step_anm_pdb)
-    aa_target = get_atomarray(PS.out_dir / PS.amber_pdb_target_min_pdb)
-    aa_init = get_atomarray(PS.out_dir / PS.amber_pdb_initial_min_pdb)
+    ld_aa = load_structure(str(PS.out_dir / SP.step_anm_pdb))
+    aa_target = load_structure(str(PS.out_dir / PS.amber_pdb_target_min_pdb))
+    aa_init = load_structure(str(PS.out_dir / PS.amber_pdb_initial_min_pdb))
 
     step_info = {}
     step_info["aa_rmsd_target"], step_info["ca_rmsd_target"] = calc_aa_ca_rmsd(

@@ -69,7 +69,6 @@ def run_step(
     pred_file.set_structure(pred_aa)
     pred_file.write(pred_abs_path)
     step_logger.debug(f"Wrote raw step coordinates to {pred_abs_path}")
-    breakpoint()
 
     match app_settings.LD_method:
         case "OpenMM":
@@ -95,18 +94,14 @@ def run_step(
                 raise LDError
         case "AMBER":
             from anmld_python.ld.amber import run_ld_step
-            from subprocess import CalledProcessError
 
             resnum: int = np.unique(aa_step.res_id).size  # type: ignore
-            try:
-                step_info = run_ld_step(
-                    pred_abs_path=pred_abs_path,
-                    resnum=resnum,
-                    ld_logger=ld_logger,
-                    app_settings=app_settings,
-                    SP=step_paths,
-                )
-            except CalledProcessError:
-                raise LDError
+            step_info = run_ld_step(
+                pred_abs_path=pred_abs_path,
+                resnum=resnum,
+                ld_logger=ld_logger,
+                app_settings=app_settings,
+                SP=step_paths,
+            )
     step_info["selection"] = sel_info
     return step_info
