@@ -63,7 +63,7 @@ def run_step(
                 app_settings=app_settings,
             )
 
-    pred_abs_path = PS.out_dir / step_paths.step_anm_pdb
+    pred_abs_path = PS._out_dir / step_paths.step_anm_pdb
 
     pred_file = fastpdb.PDBFile()
     pred_file.set_structure(pred_aa)

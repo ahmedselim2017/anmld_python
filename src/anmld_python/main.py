@@ -1,5 +1,4 @@
 from __future__ import annotations
-from biotite.structure.io import load_structure
 from loguru import logger
 from pathlib import Path
 from typing import Optional
@@ -19,6 +18,7 @@ from anmld_python.settings import AppSettings
 from anmld_python.tools import (
     LDError,
     NonConnectedStructureError,
+    get_atomarray,
     sanitize_structure,
 )
 
@@ -49,7 +49,7 @@ def setup_logging(app_settings: AppSettings):
         format=logger_format,
     )
     logger.add(
-        app_settings.path_settings.out_dir / "trace.log",
+        app_settings.path_settings._out_dir / "trace.log",
         colorize=False,
         level="TRACE",
         format=logger_format,
@@ -68,12 +68,9 @@ def process_inputs(
 ):
     logger.trace("Processing inputs")
     PS = app_settings.path_settings
-    PS.out_dir = PS.out_dir.absolute()
+    PS._out_dir = PS._out_dir.absolute()
 
-    app_settings.subprocess_settings.cwd = PS.out_dir
-
-    PS.out_dir.mkdir(parents=True)
-    logger.trace(f"Created output directory at {PS.out_dir}")
+    app_settings.subprocess_settings.cwd = PS._out_dir
 
     if app_settings.LD_method == "OpenMM":
         import openmm as mm
@@ -92,14 +89,14 @@ def process_inputs(
     logger.info("Sanitizing the initial and target structures")
     aa_step = sanitize_structure(
         in_path=path_abs_structure_init.absolute(),
-        out_path=PS.out_dir / PS.sanitized_init_structure,
+        out_path=PS._out_dir / PS.sanitized_init_structure,
         app_settings=app_settings,
         sel_chains=chain_init,
         include_bonds=True,
     )
     aa_target = sanitize_structure(
         in_path=path_abs_structure_target.absolute(),
-        out_path=PS.out_dir / PS.sanitized_target_structure,
+        out_path=PS._out_dir / PS.sanitized_target_structure,
         app_settings=app_settings,
         sel_chains=chain_target,
         include_bonds=True,
@@ -150,7 +147,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                     import openmm.app as mm_app
 
                     anm_pdb = mm_app.PDBFile(
-                        str(PS.out_dir / PS.sanitized_init_structure)
+                        str(PS._out_dir / PS.sanitized_init_structure)
                     )  # INFO: fastpdb can't load bondlist so load file with openmm
 
                     mm_min_sim, mm_ld_sim = setup_sims(
@@ -160,43 +157,45 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                     )
 
                     run_setup(
-                        path_init=PS.out_dir / PS.sanitized_init_structure,
-                        path_target=PS.out_dir / PS.sanitized_target_structure,
+                        path_init=PS._out_dir / PS.sanitized_init_structure,
+                        path_target=PS._out_dir / PS.sanitized_target_structure,
                         init_min_sim=mm_min_sim,
                         ld_logger=ld_logger,
                         app_settings=app_settings,
                     )
 
-                    aa_step = load_structure(
-                        str(PS.out_dir / PS.openmm_min_aligned_init_pdb)
+                    aa_step = get_atomarray(
+                        PS._out_dir / PS.openmm_min_aligned_init_pdb
                     )
-                    aa_target = load_structure(
-                        str(PS.out_dir / PS.openmm_min_target_pdb)
-                    )
+                    aa_target = get_atomarray(PS._out_dir / PS.openmm_min_target_pdb)
                 case "AMBER":
                     from anmld_python.ld.amber import run_setup
 
-                    aa_step = load_structure(
-                        str(PS.out_dir / PS.sanitized_init_structure)
-                    )
+                    aa_step = get_atomarray(PS._out_dir / PS.sanitized_init_structure)
 
                     resnum = np.unique(aa_step.res_id).size  # type: ignore
                     run_setup(
-                        path_abs_init=PS.out_dir / PS.sanitized_init_structure,
-                        path_abs_target=PS.out_dir / PS.sanitized_target_structure,
+                        path_abs_init=PS._out_dir / PS.sanitized_init_structure,
+                        path_abs_target=PS._out_dir / PS.sanitized_target_structure,
                         resnum=resnum,
                         ld_logger=ld_logger,
                         app_settings=app_settings,
                     )
 
-                    # FIXME
                     try:
-                        aa_step = load_structure(str(PS.out_dir / PS.amber_pdb_initial_min_pdb))
-                        aa_target = load_structure(
-                            str(PS.out_dir / PS.amber_pdb_target_min_pdb)
+                        aa_step = get_atomarray(
+                            PS._out_dir / PS.amber_pdb_initial_min_pdb
                         )
-                    except Exception:
-                        breakpoint()
+                        aa_target = get_atomarray(
+                            PS._out_dir / PS.amber_pdb_target_min_pdb
+                        )
+                    except Exception as e:
+                        ld_logger.critical(
+                            "Could not load the AMBER minimized structures"
+                            f" {PS._out_dir / PS.amber_pdb_initial_min_pdb} and"
+                            f" {PS._out_dir / PS.amber_pdb_target_min_pdb}"
+                        )
+                        raise e
 
         try:
             step_info = run_step(
@@ -229,7 +228,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
             )
             app_settings.anmld_settings.DF /= 2
             continue
-        aa_step = load_structure(str(PS.out_dir / step_paths.step_anmld_pdb))
+        aa_step = get_atomarray(PS._out_dir / step_paths.step_anmld_pdb)
 
         step_info["step"] = step
 
@@ -271,8 +270,8 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
     PS = app_settings.path_settings
 
     cycle_df = pd.json_normalize(cycle_info)
-    cycle_df.to_csv(PS.out_dir / PS.info_csv, index=False)
-    logger.info(f"Wrote cycle results to {PS.out_dir / PS.info_csv}")
+    cycle_df.to_csv(PS._out_dir / PS.info_csv, index=False)
+    logger.info(f"Wrote cycle results to {PS._out_dir / PS.info_csv}")
 
     sns.set_theme()
 
@@ -307,7 +306,7 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
     ax.set_ylabel("RMSD (Å)")
     ax.set_title("RMSD Values With The Minimized Target and Initial Structures")
     fig.tight_layout()
-    fig.savefig(PS.out_dir / PS.info_rmsd_fig)
+    fig.savefig(PS._out_dir / PS.info_rmsd_fig)
 
     fig, ax = plt.subplots()
     sns.scatterplot(
@@ -321,7 +320,7 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
     ax.set_ylabel("Mode")
     ax.set_title("Selected Modes")
     fig.tight_layout()
-    fig.savefig(PS.out_dir / PS.info_sel_modes_fig)
+    fig.savefig(PS._out_dir / PS.info_sel_modes_fig)
 
     logger.info(f"Plotted cycle results.")
 
@@ -330,30 +329,30 @@ def cleanup(app_settings: AppSettings):
     PS = app_settings.path_settings
 
     if app_settings.LD_method == "AMBER":
-        Path(PS.out_dir / PS.amber_min_in).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_sim_in).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_init_top).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_init_coord).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_target_top).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_target_coord).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_tleap_init_in).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_init_min_out).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_init_min_coord).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_init_min_rst).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_target_min_out).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_target_min_coord).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_target_min_rst).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_ptraj_rewrite_init_in).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_rewrite_init_min_rst).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_ptraj_align_target2initial_in).unlink(
+        Path(PS._out_dir / PS.amber_min_in).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_sim_in).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_init_top).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_init_coord).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_target_top).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_target_coord).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_tleap_init_in).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_init_min_out).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_init_min_coord).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_init_min_rst).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_target_min_out).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_target_min_coord).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_target_min_rst).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_ptraj_rewrite_init_in).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_rewrite_init_min_rst).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_ptraj_align_target2initial_in).unlink(
             missing_ok=True
         )
-        Path(PS.out_dir / PS.amber_rms_target_align_dat).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_target_min_algn).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_initial_min_pdb).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_initial_min_c_pdb).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_target_min_pdb).unlink(missing_ok=True)
-        Path(PS.out_dir / PS.amber_pdb_target_min_c_pdb).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_rms_target_align_dat).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_target_min_algn).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_initial_min_pdb).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_initial_min_c_pdb).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_target_min_pdb).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pdb_target_min_c_pdb).unlink(missing_ok=True)
 
     for step in range(app_settings.anmld_settings.n_steps):
         step_paths = PS.step_path_settings.format_step(
@@ -362,27 +361,29 @@ def cleanup(app_settings: AppSettings):
         )
 
         if app_settings.LD_method == "OpenMM":
-            Path(PS.out_dir / step_paths.step_anm_pdb).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_anm_pdb).unlink(missing_ok=True)
         elif app_settings.LD_method == "AMBER":
-            Path(PS.out_dir / step_paths.step_amber_tleap_anm_pdb).unlink(
+            Path(PS._out_dir / step_paths.step_amber_tleap_anm_pdb).unlink(
                 missing_ok=True
             )
-            Path(PS.out_dir / step_paths.step_amber_top).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_coord).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_min_out).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_min_coord).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_min_rst).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_sim_out).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_sim_coord).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_sim_ener).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_sim_restart).unlink(missing_ok=True)
-            Path(PS.out_dir / step_paths.step_amber_ptraj_align_in).unlink(
+            Path(PS._out_dir / step_paths.step_amber_top).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_coord).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_min_out).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_min_coord).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_min_rst).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_sim_out).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_sim_coord).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_sim_ener).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_sim_restart).unlink(
                 missing_ok=True
             )
-            Path(PS.out_dir / step_paths.step_amber_ptraj_rms_align_dat).unlink(
+            Path(PS._out_dir / step_paths.step_amber_ptraj_align_in).unlink(
                 missing_ok=True
             )
-            Path(PS.out_dir / step_paths.step_amber_ptraj_algn_restart).unlink(
+            Path(PS._out_dir / step_paths.step_amber_ptraj_rms_align_dat).unlink(
+                missing_ok=True
+            )
+            Path(PS._out_dir / step_paths.step_amber_ptraj_algn_restart).unlink(
                 missing_ok=True
             )
 
@@ -391,11 +392,16 @@ def main(
     settings_path: Path,
     path_abs_structure_init: Path,
     path_abs_structure_target: Path,
+    out_dir: Path = Path("anmld_out"),
     chain_init: Optional[list[str]] = None,
     chain_target: Optional[list[str]] = None,
 ):
     with open(settings_path, "rb") as settings_f:
         app_settings = AppSettings(**tomllib.load(settings_f))
+
+    app_settings.path_settings._out_dir = out_dir
+    app_settings.path_settings._out_dir.mkdir(parents=True)
+    logger.trace(f"Created output directory at {app_settings.path_settings._out_dir}")
 
     setup_logging(app_settings=app_settings)
 

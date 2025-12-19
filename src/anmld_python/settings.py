@@ -5,7 +5,8 @@ from pydantic import (
     Field,
     PositiveInt,
     PositiveFloat,
-    BaseModel
+    BaseModel,
+    PrivateAttr
 )
 from pydantic_settings import BaseSettings
 from openmm import Platform
@@ -56,7 +57,7 @@ class StepPathSettings(BaseSettings):
 
 
 class PathSettings(BaseSettings):
-    out_dir: Path = Field(Path("anmld_out"))
+    _out_dir: Path = PrivateAttr()
     info_csv: Path = Field(Path("info.csv"))
     info_rmsd_fig: Path = Field(Path("info_RMSDs.pdf"))
     info_sel_modes_fig: Path = Field(Path("info_sel_modes.pdf"))

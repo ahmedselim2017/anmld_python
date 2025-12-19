@@ -3,9 +3,12 @@ from pathlib import Path
 from typing import Optional, cast
 
 from biotite.structure.atoms import AtomArray, AtomArrayStack
-from biotite.structure.io import load_structure, save_structure
+from biotite.structure.io import save_structure
 from loguru import logger
 import biotite.structure as b_structure
+import biotite.structure.io.pdbx as b_pdbx
+import biotite.structure.io.pdb as b_pdb
+import fastpdb
 import loguru
 import numpy as np
 import openmm.app as mm_app
@@ -21,6 +24,53 @@ class LDError(Exception):
 class NonConnectedStructureError(Exception):
     pass
 
+def get_atomarray(
+    file_path: Path,
+    structure_index: int = 0,
+    extra_fields: Optional[list | str] = None,
+    *args,
+    **kwargs,
+) -> AtomArray:
+    if not extra_fields:
+        extra_fields = []
+
+    match file_path.suffix:
+        case ".pdb":
+            # fastpdb might panic while loading bonds
+            # https://github.com/biotite-dev/fastpdb/pull/25
+            try:
+                structure_file = fastpdb.PDBFile.read(file_path)
+                atomarray = structure_file.get_structure(
+                    extra_fields=extra_fields,
+                    model=structure_index + 1,
+                    *args,
+                    **kwargs,
+                )
+            except BaseException:
+                logger.warning(
+                    "fastpdb panicked while loading the structure, using biotite to load the structure."
+                )
+                structure_file = b_pdb.PDBFile.read(file_path)
+                atomarray = structure_file.get_structure(
+                    extra_fields=extra_fields,
+                    model=structure_index + 1,
+                    *args,
+                    **kwargs,
+                )
+        case ".cif":
+            structure_file = b_pdbx.CIFFile.read(file_path)
+            atomarray = b_pdbx.get_structure(
+                structure_file,
+                model=structure_index - 1,
+                extra_fields=extra_fields,
+                *args,
+                **kwargs,
+            )
+        case _:
+            emsg = f"Given structure file {file_path} is not supported."
+            raise ValueError(emsg)
+
+    return cast(AtomArray, atomarray)
 
 def get_CAs(aa: AtomArray) -> AtomArray:
     if not (cas := aa[(aa.atom_name == "CA") & (aa.element == "C")]):
@@ -110,7 +160,7 @@ def sanitize_structure(
     sanitization_logger.trace("Sanitizing structure")
 
     sanitization_logger.debug("Loading atomarray")
-    aa = load_structure(file_path=str(in_path), *args, **kwargs)
+    aa = get_atomarray(file_path=in_path, *args, **kwargs)
     if isinstance(aa, AtomArrayStack):
         emsg = "The structure file include more than one models"
         sanitization_logger.critical(emsg)
@@ -153,7 +203,7 @@ def sanitize_structure(
             app_settings=app_settings,
         )
 
-    aa = load_structure(file_path=str(out_path), *args, **kwargs)
+    aa = get_atomarray(file_path=out_path, *args, **kwargs)
     tmp_path.unlink()
 
     return aa

@@ -36,7 +36,6 @@ save_ld = false
 platform = "CUDA"
 
 [PATHS]
-out_dir = "anmld_out"
 info_csv = "info.csv"
 info_rmsd_fig = "info_RMSDs.pdf"
 info_sel_modes_fig = "info_sel_modes.pdf"

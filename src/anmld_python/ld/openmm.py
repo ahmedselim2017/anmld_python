@@ -7,7 +7,7 @@ from openmm.app.topology import Topology
 from openmm.app.simulation import Simulation
 
 from biotite.structure import AtomArray
-from biotite.structure.io import load_structure, save_structure
+from biotite.structure.io import save_structure
 import biotite.interface.openmm as b_mm
 import biotite.structure as b_structure
 
@@ -19,6 +19,7 @@ from anmld_python.settings import AppSettings, StepPathSettings
 from anmld_python.tools import (
     calc_aa_ca_rmsd,
     get_CAs,
+    get_atomarray,
     safe_superimpose,
 )
 
@@ -152,7 +153,7 @@ def run_setup(
     min_init_aa = b_mm.from_context(aa_init, init_min_sim.context)
     if MS.save_ld or app_settings.logging_level == "DEBUG":
         save_structure(
-            file_path=str(PS.out_dir / PS.openmm_min_init_pdb),
+            file_path=str(PS._out_dir / PS.openmm_min_init_pdb),
             array=min_init_aa,
         )
 
@@ -171,7 +172,7 @@ def run_setup(
     min_target_aa = b_mm.from_context(aa_target, target_min_sim.context)
 
     save_structure(
-        file_path=str(PS.out_dir / PS.openmm_min_target_pdb),
+        file_path=str(PS._out_dir / PS.openmm_min_target_pdb),
         array=min_target_aa,
     )
 
@@ -184,7 +185,7 @@ def run_setup(
     )
 
     save_structure(
-        file_path=str(PS.out_dir / PS.openmm_min_aligned_init_pdb),
+        file_path=str(PS._out_dir / PS.openmm_min_aligned_init_pdb),
         array=min_aligned_init_aa,
     )
 
@@ -216,7 +217,7 @@ def run_ld_step(
 
     if MS.save_min or app_settings.logging_level == "DEBUG":
         save_structure(
-            file_path=str(PS.out_dir / step_paths.step_openmm_min),
+            file_path=str(PS._out_dir / step_paths.step_openmm_min),
             array=b_mm.from_context(aa_anm, min_sim.context),
         )
 
@@ -231,7 +232,7 @@ def run_ld_step(
 
     if MS.save_ld or app_settings.logging_level == "DEBUG":
         save_structure(
-            file_path=str(PS.out_dir / step_paths.step_openmm_ld),
+            file_path=str(PS._out_dir / step_paths.step_openmm_ld),
             array=ld_aa,
         )
 
@@ -254,11 +255,11 @@ def run_ld_step(
     ld_ca_rmsd_target = b_structure.rmsd(target_ca, ld_aligned_ca)
 
     save_structure(
-        file_path=str(PS.out_dir / step_paths.step_anmld_pdb),
+        file_path=str(PS._out_dir / step_paths.step_anmld_pdb),
         array=ld_aligned_aa,
     )
 
-    aa_init = load_structure(str(PS.out_dir / PS.openmm_min_aligned_init_pdb))
+    aa_init = get_atomarray(PS._out_dir / PS.openmm_min_aligned_init_pdb)
     step_info = {
         "aa_rmsd_target": ld_aa_rmsd_target,
         "ca_rmsd_target": ld_ca_rmsd_target,
