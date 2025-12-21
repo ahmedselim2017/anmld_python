@@ -38,7 +38,7 @@ def add_H(
         app_settings.openmm_settings.forcefield,
         "implicit/hct.xml",  # AMBER igb=1
     )
-    err = None
+    passed = False
     sanitization_logger.info("Adding Hydrogens with OpenMM")
     for i in range(app_settings.sanitization_max_retry):
         try:
@@ -46,17 +46,18 @@ def add_H(
                 mm_forcefield,
                 platform=app_settings.openmm_settings.platform_obj,
             )
-        except mm.OpenMMException as err:
+            passed = True
+            break
+        except mm.OpenMMException:
             sanitization_logger.warning(
                 f"Could not add Hydrogens."
                 f" Retrying ({i + 1}/{app_settings.sanitization_max_retry})",
             )
-    else:
-        if err:  # type: ignore
-            emsg = "Could not add Hydrogens due to clashes in the structure."
+    if not passed:
+        emsg = "Could not add Hydrogens due to clashes in the structure."
 
-            sanitization_logger.critical(emsg)
-            raise Exception(emsg) from None
+        sanitization_logger.critical(emsg)
+        raise Exception(emsg) from None
     sanitization_logger.info(f"Added Hydrogens atoms")
 
     return modeller.getTopology(), modeller.getPositions()

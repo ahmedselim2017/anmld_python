@@ -123,26 +123,25 @@ def _run_pdbfixer(
     sanitization_logger.info("Adding missing heavy atoms")
     fixer.missingResidues = {}
     fixer.findMissingAtoms()
-    err = None
+    passed = False
     for i in range(app_settings.sanitization_max_retry):
         try:
             fixer.addMissingAtoms()
+            passed = True
             break
-        except Exception as err:
+        except Exception as e:
             sanitization_logger.warning(
                 "PDBFixer could not add missing heavy atoms"
                 " due to clashes in the structure."
                 f" Retrying ({i + 1}/{app_settings.sanitization_max_retry})",
-                err=err,
+                err=e,
             )
-    else:
-        if err:  # type: ignore
-            sanitization_logger.critical(
-                "PDBFixer could not add missing heavy atoms",
-                " due to clashes in the structure.",
-                err=err,
-            )
-            raise err from None
+    if not passed:
+        sanitization_logger.critical(
+            "PDBFixer could not add missing heavy atoms",
+            " due to clashes in the structure.",
+        )
+        raise Exception from None
     sanitization_logger.info(f"Added missing heavy atoms")
 
     return fixer.topology, fixer.positions
