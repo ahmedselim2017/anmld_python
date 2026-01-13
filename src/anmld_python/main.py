@@ -141,10 +141,12 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
         )
 
         if step == 0:
+            step_logger.trace("Starting ANM-LD setup")
             match app_settings.LD_method:
                 case "OpenMM":
                     from anmld_python.ld.openmm import run_setup, setup_sims
                     import openmm.app as mm_app
+                    import openmm as mm
 
                     anm_pdb = mm_app.PDBFile(
                         str(PS._out_dir / PS.sanitized_init_structure)
@@ -156,13 +158,18 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                         app_settings=app_settings,
                     )
 
-                    run_setup(
-                        path_init=PS._out_dir / PS.sanitized_init_structure,
-                        path_target=PS._out_dir / PS.sanitized_target_structure,
-                        init_min_sim=mm_min_sim,
-                        ld_logger=ld_logger,
-                        app_settings=app_settings,
-                    )
+                    try:
+                        run_setup(
+                            path_init=PS._out_dir / PS.sanitized_init_structure,
+                            path_target=PS._out_dir / PS.sanitized_target_structure,
+                            init_min_sim=mm_min_sim,
+                            ld_logger=ld_logger,
+                            app_settings=app_settings,
+                        )
+                    except mm.OpenMMException as e:
+                        emsg = "The OpenMM step of the ANM-LD setup returned an error."
+                        ld_logger.critical(emsg, err=e)
+                        raise e from None
 
                     aa_step = get_atomarray(
                         PS._out_dir / PS.openmm_min_aligned_init_pdb
@@ -174,13 +181,21 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                     aa_step = get_atomarray(PS._out_dir / PS.sanitized_init_structure)
 
                     resnum = np.unique(aa_step.res_id).size  # type: ignore
-                    run_setup(
-                        path_abs_init=PS._out_dir / PS.sanitized_init_structure,
-                        path_abs_target=PS._out_dir / PS.sanitized_target_structure,
-                        resnum=resnum,
-                        ld_logger=ld_logger,
-                        app_settings=app_settings,
-                    )
+                    try:
+                        run_setup(
+                            path_abs_init=PS._out_dir / PS.sanitized_init_structure,
+                            path_abs_target=PS._out_dir / PS.sanitized_target_structure,
+                            resnum=resnum,
+                            ld_logger=ld_logger,
+                            app_settings=app_settings,
+                        )
+                    except (LDError, ValueError) as e:
+                        ld_logger.critical(
+                            "The AMBER step of the ANM-LD setup returned"
+                            " an error. For details, see AMBER outputs.",
+                            err=e,
+                        )
+                        raise e from None
 
                     try:
                         aa_step = get_atomarray(
@@ -196,6 +211,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                             f" {PS._out_dir / PS.amber_pdb_target_min_pdb}"
                         )
                         raise e
+            step_logger.info("Finished ANM-LD setup")
 
         try:
             step_info = run_step(
@@ -223,7 +239,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
 
         except (LDError, ValueError):
             ld_logger.warning(
-                f"The LD simulation returned an error. Halving the DF value to"
+                f"The LD step returned an error. Halving the DF value to"
                 f" {app_settings.anmld_settings.DF / 2} and restarting the step"
             )
             app_settings.anmld_settings.DF /= 2
