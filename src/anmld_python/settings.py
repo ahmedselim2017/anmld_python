@@ -23,6 +23,8 @@ class StepPathSettings(BaseSettings):
     step_openmm_min: str    = "STEP_{step}_OpenMM_min.pdb"
     step_openmm_ld: str     = "STEP_{step}_OpenMM_ld.pdb"
 
+    step_amber_anm_pdb: str = "STEP_{step}_AMBER_ANM.pdb"
+
     step_amber_tleap_anm_pdb: str    = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
     step_amber_top: str     = "STEP_{step}_AMBER_raw.top"
     step_amber_coord: str   = "STEP_{step}_AMBER_raw.coord"

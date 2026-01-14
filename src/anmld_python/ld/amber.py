@@ -258,9 +258,14 @@ def run_setup(
     parmed_init_parm = parmed.amber.AmberParm(str(PS._out_dir / PS.amber_pdb_init_top))
     parmed_init_parm.load_rst7(str(PS._out_dir / PS.amber_pdb_rewrite_init_min_rst))
     parmed.tools.actions.addPDB(
-        parmed_init_parm, str(PS._out_dir / PS.init_structure)
+        parmed_init_parm,
+        str(PS._out_dir / PS.init_structure),
     ).execute()
-    parmed_init_parm.save(str(PS._out_dir / PS.amber_pdb_initial_min_pdb))
+    parmed_init_parm.save(
+        str(PS._out_dir / PS.amber_pdb_initial_min_pdb),
+        renumber=False,
+    )
+
     ld_logger.info(
         "Saved minimized initial structure to {path}",
         path=PS._out_dir / PS.amber_pdb_initial_min_pdb,
@@ -273,7 +278,10 @@ def run_setup(
         parmed_target_parm, str(PS._out_dir / PS.target_structure)
     ).execute()
     parmed_target_parm.load_rst7(str(PS._out_dir / PS.amber_target_min_algn))
-    parmed_target_parm.save(str(PS._out_dir / PS.amber_pdb_target_min_pdb))
+    parmed_target_parm.save(
+        str(PS._out_dir / PS.amber_pdb_target_min_pdb),
+        renumber=False,
+    )
     ld_logger.info(
         "Saved minimized target structure to {path}",
         path=PS._out_dir / PS.amber_pdb_target_min_pdb,
@@ -292,11 +300,18 @@ def run_ld_step(
 
     amber_tleap_step_in_path = PS._out_dir / SP.step_amber_tleap_anm_pdb
 
+    run_pdb4amber(
+        in_path=pred_abs_path,
+        out_path=PS._out_dir / SP.step_amber_anm_pdb,
+        logger=ld_logger,
+        app_settings=app_settings,
+    )
+
     with open(amber_tleap_step_in_path, "w") as amber_tleap_step_in_f:
         amber_tleap_step_in_f.write(
             dedent(f"""\
                     source {AS.forcefield}
-                    x=loadpdb "{pred_abs_path}"
+                    x=loadpdb "{PS._out_dir / SP.step_amber_anm_pdb}"
                     saveamberparm x "{PS._out_dir / SP.step_amber_top}" "{PS._out_dir / SP.step_amber_coord}"
                     quit
                        """)
@@ -392,24 +407,14 @@ def run_ld_step(
     parmed_parm = parmed.amber.AmberParm(str(PS._out_dir / SP.step_amber_top))
     parmed.tools.actions.addPDB(parmed_parm, PS._out_dir / PS.init_structure).execute()
     parmed_parm.load_rst7(str(PS._out_dir / SP.step_amber_ptraj_algn_restart))
-    parmed_parm.save(str(PS._out_dir / SP.step_anmld_pdb))
+    parmed_parm.save(
+        str(PS._out_dir / SP.step_anmld_pdb),
+        renumber=False,
+    )
     ld_logger.info(
         "Saved LD structure to {path}",
         path=PS._out_dir / SP.step_anmld_pdb,
     )
-    # cmd_ambmask_AA = dedent(f"""\
-    #             ambmask -p "{SP.step_amber_top}"                 \\
-    #                     -c "{SP.step_amber_ptraj_algn_restart}"  \\
-    #                     -prnlev 1 -out pdb""")
-    #
-    # ld_logger.info("Running ambmask AA")
-    # ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_ambmask_AA)
-    # with open(PS._out_dir / SP.step_anmld_pdb, "w") as step_ambmask_AA_pdb_f:
-    #     subprocess.run(
-    #         AS.ambertools_prefix + cmd_ambmask_AA,
-    #         stdout=step_ambmask_AA_pdb_f,
-    #         **app_settings.subprocess_settings.__dict__,
-    #     )
 
     ld_logger.debug("Aligning the LD result to the target")
     ld_aa = get_atomarray(PS._out_dir / SP.step_anm_pdb)

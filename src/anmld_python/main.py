@@ -379,9 +379,8 @@ def cleanup(app_settings: AppSettings):
         if app_settings.LD_method == "OpenMM":
             Path(PS._out_dir / step_paths.step_anm_pdb).unlink(missing_ok=True)
         elif app_settings.LD_method == "AMBER":
-            Path(PS._out_dir / step_paths.step_amber_tleap_anm_pdb).unlink(
-                missing_ok=True
-            )
+            Path(PS._out_dir / step_paths.step_amber_anm_pdb).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_tleap_anm_pdb).unlink(missing_ok=True)
             Path(PS._out_dir / step_paths.step_amber_top).unlink(missing_ok=True)
             Path(PS._out_dir / step_paths.step_amber_coord).unlink(missing_ok=True)
             Path(PS._out_dir / step_paths.step_amber_min_out).unlink(missing_ok=True)
@@ -390,18 +389,10 @@ def cleanup(app_settings: AppSettings):
             Path(PS._out_dir / step_paths.step_amber_sim_out).unlink(missing_ok=True)
             Path(PS._out_dir / step_paths.step_amber_sim_coord).unlink(missing_ok=True)
             Path(PS._out_dir / step_paths.step_amber_sim_ener).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_sim_restart).unlink(
-                missing_ok=True
-            )
-            Path(PS._out_dir / step_paths.step_amber_ptraj_align_in).unlink(
-                missing_ok=True
-            )
-            Path(PS._out_dir / step_paths.step_amber_ptraj_rms_align_dat).unlink(
-                missing_ok=True
-            )
-            Path(PS._out_dir / step_paths.step_amber_ptraj_algn_restart).unlink(
-                missing_ok=True
-            )
+            Path(PS._out_dir / step_paths.step_amber_sim_restart).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_ptraj_align_in).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_ptraj_rms_align_dat).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_ptraj_algn_restart).unlink(missing_ok=True)
 
 
 def main(
