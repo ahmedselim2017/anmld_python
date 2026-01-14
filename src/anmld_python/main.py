@@ -3,6 +3,7 @@ from loguru import logger
 from pathlib import Path
 from typing import Optional
 import importlib.metadata
+import shutil
 import tomllib
 
 from tqdm.auto import tqdm
@@ -69,6 +70,9 @@ def process_inputs(
     logger.trace("Processing inputs")
     PS = app_settings.path_settings
     PS._out_dir = PS._out_dir.absolute()
+
+    shutil.copy(path_abs_structure_init, PS._out_dir / PS.init_structure)
+    shutil.copy(path_abs_structure_target, PS._out_dir / PS.target_structure)
 
     app_settings.subprocess_settings.cwd = PS._out_dir
 
@@ -360,15 +364,11 @@ def cleanup(app_settings: AppSettings):
         Path(PS._out_dir / PS.amber_pdb_target_min_rst).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_ptraj_rewrite_init_in).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_pdb_rewrite_init_min_rst).unlink(missing_ok=True)
-        Path(PS._out_dir / PS.amber_ptraj_align_target2initial_in).unlink(
-            missing_ok=True
-        )
+        Path(PS._out_dir / PS.amber_ptraj_align_target2initial_in).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_rms_target_align_dat).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_target_min_algn).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_pdb_initial_min_pdb).unlink(missing_ok=True)
-        Path(PS._out_dir / PS.amber_pdb_initial_min_c_pdb).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_pdb_target_min_pdb).unlink(missing_ok=True)
-        Path(PS._out_dir / PS.amber_pdb_target_min_c_pdb).unlink(missing_ok=True)
 
     for step in range(app_settings.anmld_settings.n_steps):
         step_paths = PS.step_path_settings.format_step(

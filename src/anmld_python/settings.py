@@ -41,7 +41,6 @@ class StepPathSettings(BaseSettings):
     step_amber_ptraj_algn_restart: str = "STEP_{step}_AMBER_algn.restart"
 
     step_anmld_pdb: str = "STEP_{step}_ANMLD.pdb"
-    step_anmld_CA_pdb: str = "STEP_{step}_ANMLD_CA.pdb"
 
     def format_step(self, step: int, n_maxdigit: int):
         dump = self.model_dump()
@@ -61,6 +60,9 @@ class PathSettings(BaseSettings):
     info_csv: Path = Field(Path("info.csv"))
     info_rmsd_fig: Path = Field(Path("info_RMSDs.pdf"))
     info_sel_modes_fig: Path = Field(Path("info_sel_modes.pdf"))
+
+    init_structure: str = "init.pdb"
+    target_structure: str = "target.pdb"
 
     sanitized_init_structure: str = "sanitized_init.pdb"
     sanitized_target_structure: str = "sanitized_target.pdb"
@@ -96,10 +98,7 @@ class PathSettings(BaseSettings):
     amber_target_min_algn: Path                 = Path("AMBER_target_min_algn.rst")
 
     amber_pdb_initial_min_pdb: Path     = Path("AMBER_pdb_initial_min.pdb")
-    amber_pdb_initial_min_c_pdb: Path   = Path("AMBER_pdb_initial_min_C.pdb")
-
     amber_pdb_target_min_pdb: Path     = Path("AMBER_pdb_target_min.pdb")
-    amber_pdb_target_min_c_pdb: Path   = Path("AMBER_pdb_target_min_C.pdb")
 
     step_path_settings: StepPathSettings = Field(StepPathSettings() ,alias="STEP_PATHS")
 

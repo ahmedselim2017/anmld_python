@@ -4,6 +4,7 @@ from textwrap import dedent
 import subprocess
 
 import loguru
+import parmed
 
 from anmld_python.settings import AppSettings, StepPathSettings
 from anmld_python.tools import LDError, calc_aa_ca_rmsd, get_atomarray
@@ -49,6 +50,7 @@ def check_pmemd_out(out_path: Path, logger: loguru.Logger):
     keywords = ["*************", "FAILURE", "Indef", "NaN", "Infinity"]
     for keyword in keywords:
         if keyword in results:
+            logger.trace(f"Found {keyword=} in pmemd output {out_path=}")
             return False
     return True
 
@@ -197,7 +199,7 @@ def run_setup(
         raise LDError(emsg) from None
 
     # create initial_min.rst (rewrite to be able to read by ambmsk,
-    # version problem)
+    # version problem as noted by the deprecated MATLAB version of ANMLD)
     with open(
         PS._out_dir / PS.amber_ptraj_rewrite_init_in,
         "w",
@@ -253,52 +255,29 @@ def run_setup(
         **app_settings.subprocess_settings.__dict__,
     )
 
-    # create initial all-atom and alpha C pdbs
-    cmd_AA_init = dedent(f"""\
-            ambmask -p "{PS.amber_pdb_init_top}"            \\
-                -c "{PS.amber_pdb_rewrite_init_min_rst}"    \\
-                -prnlev 1 -out pdb""")
-    ld_logger.info("Running ambmask (initial AA)")
-    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_AA_init)
-    with open(PS._out_dir / PS.amber_pdb_initial_min_pdb, "w") as out_f:
-        subprocess.run(
-            AS.ambertools_prefix + cmd_AA_init,
-            stdout=out_f,
-            **app_settings.subprocess_settings.__dict__,
-        )
+    parmed_init_parm = parmed.amber.AmberParm(str(PS._out_dir / PS.amber_pdb_init_top))
+    parmed_init_parm.load_rst7(str(PS._out_dir / PS.amber_pdb_rewrite_init_min_rst))
+    parmed.tools.actions.addPDB(
+        parmed_init_parm, str(PS._out_dir / PS.init_structure)
+    ).execute()
+    parmed_init_parm.save(str(PS._out_dir / PS.amber_pdb_initial_min_pdb))
+    ld_logger.info(
+        "Saved minimized initial structure to {path}",
+        path=PS._out_dir / PS.amber_pdb_initial_min_pdb,
+    )
 
-    cmd_CA_init = cmd_AA_init + " -find @CA"
-    ld_logger.info("Running ambmask (initial CA)")
-    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_CA_init)
-    with open(PS._out_dir / PS.amber_pdb_initial_min_c_pdb, "w") as out_f:
-        subprocess.run(
-            AS.ambertools_prefix + cmd_CA_init,
-            stdout=out_f,
-            **app_settings.subprocess_settings.__dict__,
-        )
-
-    cmd_AA_target = dedent(f"""\
-            ambmask -p "{PS.amber_pdb_target_top}"  \\
-                -c "{PS.amber_target_min_algn}"     \\
-                -prnlev 1 -out pdb""")
-    ld_logger.info("Running ambmask (target AA)")
-    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_AA_target)
-    with open(PS._out_dir / PS.amber_pdb_target_min_pdb, "w") as out_f:
-        subprocess.run(
-            AS.ambertools_prefix + cmd_AA_target,
-            stdout=out_f,
-            **app_settings.subprocess_settings.__dict__,
-        )
-
-    cmd_CA_target = cmd_AA_target + " -find @CA"
-    ld_logger.info("Running ambmask (target CA)")
-    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_CA_target)
-    with open(PS._out_dir / PS.amber_pdb_target_min_c_pdb, "w") as out_f:
-        subprocess.run(
-            AS.ambertools_prefix + cmd_CA_target,
-            stdout=out_f,
-            **app_settings.subprocess_settings.__dict__,
-        )
+    parmed_target_parm = parmed.amber.AmberParm(
+        str(PS._out_dir / PS.amber_pdb_target_top)
+    )
+    parmed.tools.actions.addPDB(
+        parmed_target_parm, str(PS._out_dir / PS.target_structure)
+    ).execute()
+    parmed_target_parm.load_rst7(str(PS._out_dir / PS.amber_target_min_algn))
+    parmed_target_parm.save(str(PS._out_dir / PS.amber_pdb_target_min_pdb))
+    ld_logger.info(
+        "Saved minimized target structure to {path}",
+        path=PS._out_dir / PS.amber_pdb_target_min_pdb,
+    )
 
 
 def run_ld_step(
@@ -410,29 +389,27 @@ def run_ld_step(
         **app_settings.subprocess_settings.__dict__,
     )
 
-    cmd_ambmask_AA = dedent(f"""\
-                ambmask -p "{SP.step_amber_top}"                 \\
-                        -c "{SP.step_amber_ptraj_algn_restart}"  \\
-                        -prnlev 1 -out pdb""")
-
-    ld_logger.info("Running ambmask AA")
-    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_ambmask_AA)
-    with open(PS._out_dir / SP.step_anmld_pdb, "w") as step_ambmask_AA_pdb_f:
-        subprocess.run(
-            AS.ambertools_prefix + cmd_ambmask_AA,
-            stdout=step_ambmask_AA_pdb_f,
-            **app_settings.subprocess_settings.__dict__,
-        )
-
-    cmd_ambmask_CA = cmd_ambmask_AA + " -find @CA"
-    ld_logger.info("Running ambmask CA")
-    ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_ambmask_CA)
-    with open(PS._out_dir / SP.step_anmld_CA_pdb, "w") as step_ambmask_CA_pdb_f:
-        subprocess.run(
-            AS.ambertools_prefix + cmd_ambmask_CA,
-            stdout=step_ambmask_CA_pdb_f,
-            **app_settings.subprocess_settings.__dict__,
-        )
+    parmed_parm = parmed.amber.AmberParm(str(PS._out_dir / SP.step_amber_top))
+    parmed.tools.actions.addPDB(parmed_parm, PS._out_dir / PS.init_structure).execute()
+    parmed_parm.load_rst7(str(PS._out_dir / SP.step_amber_ptraj_algn_restart))
+    parmed_parm.save(str(PS._out_dir / SP.step_anmld_pdb))
+    ld_logger.info(
+        "Saved LD structure to {path}",
+        path=PS._out_dir / SP.step_anmld_pdb,
+    )
+    # cmd_ambmask_AA = dedent(f"""\
+    #             ambmask -p "{SP.step_amber_top}"                 \\
+    #                     -c "{SP.step_amber_ptraj_algn_restart}"  \\
+    #                     -prnlev 1 -out pdb""")
+    #
+    # ld_logger.info("Running ambmask AA")
+    # ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_ambmask_AA)
+    # with open(PS._out_dir / SP.step_anmld_pdb, "w") as step_ambmask_AA_pdb_f:
+    #     subprocess.run(
+    #         AS.ambertools_prefix + cmd_ambmask_AA,
+    #         stdout=step_ambmask_AA_pdb_f,
+    #         **app_settings.subprocess_settings.__dict__,
+    #     )
 
     ld_logger.debug("Aligning the LD result to the target")
     ld_aa = get_atomarray(PS._out_dir / SP.step_anm_pdb)
