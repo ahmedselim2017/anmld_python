@@ -170,7 +170,7 @@ class ANMLDSettings(BaseSettings):
     rcut_ANM: PositiveFloat = Field(8)
     gamma_ANM: float = Field(1.0)
     DF: PositiveFloat = Field(0.6)
-    DF_SC_ratio: PositiveFloat = Field(1)
+    # DF_SC_ratio: PositiveFloat = Field(1) TODO
     max_mode: PositiveInt = Field(30)
 
     early_stopping_aa_rmsd: float = Field(0)

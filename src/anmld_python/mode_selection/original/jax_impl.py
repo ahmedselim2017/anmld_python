@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import cast
 
 from biotite.structure import AtomArray
+import biotite.structure as b_structure
 import jax
 import jax.numpy as jnp
 import loguru
@@ -71,7 +72,6 @@ def generate_structures(
 
     # (mode_max, )
     rescale = app_settings.anmld_settings.DF / jnp.sqrt(eig_mag_sum / N_nodes)
-    rescale_SC = app_settings.anmld_settings.DF_SC_ratio * rescale
 
     ca_step = get_CAs(aa_step)
     ca_target = get_CAs(aa_target)
@@ -90,37 +90,22 @@ def generate_structures(
 
     aa_pred = aa_step.copy()
 
-    aa_nonSC_mask = np.isin(cast(np.ndarray, aa_pred.atom_name), ["CA", "N", "O", "C"])
-
     # TODO: needs to be imporved
-    mvmt_X = np.asarray(Vx_step[:, sel_mode_idx] * sel_mode_sign)
-    mvmt_Y = np.asarray(Vy_step[:, sel_mode_idx] * sel_mode_sign)
-    mvmt_Z = np.asarray(Vz_step[:, sel_mode_idx] * sel_mode_sign)
+    res_mvmt_X = np.asarray(Vx_step[:, sel_mode_idx] * sel_mode_sign)
+    res_mvmt_Y = np.asarray(Vy_step[:, sel_mode_idx] * sel_mode_sign)
+    res_mvmt_Z = np.asarray(Vz_step[:, sel_mode_idx] * sel_mode_sign)
 
-    res_ids = np.unique(aa_pred.res_id)
-    for i in range(len(res_ids)):
-        res_id = res_ids[i]
-        res_mask = aa_pred.res_id == res_id
+    res_mvmt_X *= rescale[sel_mode_idx]
+    res_mvmt_Y *= rescale[sel_mode_idx]
+    res_mvmt_Z *= rescale[sel_mode_idx]
 
-        aa_pred.coord[(res_mask) & (aa_nonSC_mask), 0] += (  # type: ignore
-            mvmt_X[i] * rescale[sel_mode_idx]
-        )
-        aa_pred.coord[(res_mask) & (aa_nonSC_mask), 1] += (  # type: ignore
-            mvmt_Y[i] * rescale[sel_mode_idx]
-        )
-        aa_pred.coord[(res_mask) & (aa_nonSC_mask), 2] += (  # type: ignore
-            mvmt_Z[i] * rescale[sel_mode_idx]
-        )
+    atom_res_mvmt_X = b_structure.spread_residue_wise(aa_pred, res_mvmt_X)
+    atom_res_mvmt_Y = b_structure.spread_residue_wise(aa_pred, res_mvmt_Y)
+    atom_res_mvmt_Z = b_structure.spread_residue_wise(aa_pred, res_mvmt_Z)
 
-        aa_pred.coord[(res_mask) & (~aa_nonSC_mask), 0] += (  # type: ignore
-            mvmt_X[i] * rescale_SC[sel_mode_idx]
-        )
-        aa_pred.coord[(res_mask) & (~aa_nonSC_mask), 1] += (  # type: ignore
-            mvmt_Y[i] * rescale_SC[sel_mode_idx]
-        )
-        aa_pred.coord[(res_mask) & (~aa_nonSC_mask), 2] += (  # type: ignore
-            mvmt_Z[i] * rescale_SC[sel_mode_idx]
-        )
+    aa_pred.coord[:, 0] += atom_res_mvmt_X
+    aa_pred.coord[:, 1] += atom_res_mvmt_Y
+    aa_pred.coord[:, 2] += atom_res_mvmt_Z
 
     return aa_pred, {
         "mode_number": int(sel_mode_idx) + 1,
