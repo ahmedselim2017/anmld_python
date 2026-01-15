@@ -62,6 +62,7 @@ class PathSettings(BaseSettings):
     info_csv: Path = Field(Path("info.csv"))
     info_rmsd_fig: Path = Field(Path("info_RMSDs.pdf"))
     info_sel_modes_fig: Path = Field(Path("info_sel_modes.pdf"))
+    info_df_values_fig: Path = Field(Path("info_df_values.pdf"))
 
     init_structure: str = "init.pdb"
     target_structure: str = "target.pdb"
@@ -170,6 +171,7 @@ class ANMLDSettings(BaseSettings):
     rcut_ANM: PositiveFloat = Field(8)
     gamma_ANM: float = Field(1.0)
     DF: PositiveFloat = Field(0.6)
+    _step_DF: float | None = None
     # DF_SC_ratio: PositiveFloat = Field(1) TODO
     max_mode: PositiveInt = Field(30)
 

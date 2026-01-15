@@ -131,6 +131,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
     step = 0
 
     cycle_info = []
+    app_settings.anmld_settings._step_DF = app_settings.anmld_settings.DF
     while True:
         if step >= app_settings.anmld_settings.n_steps:
             break
@@ -239,9 +240,10 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
         except (LDError, ValueError) as e:
             ld_logger.warning(
                 f"The LD step returned an error. Halving the DF value to"
-                f" {app_settings.anmld_settings.DF / 2} and restarting the step",
+                f" {app_settings.anmld_settings._step_DF / 2} temporarily and"
+                " restarting the step",
             )
-            app_settings.anmld_settings.DF /= 2
+            app_settings.anmld_settings._step_DF /= 2
             continue
         aa_step = get_atomarray(PS._out_dir / step_paths.step_anmld_pdb)
 
@@ -268,6 +270,8 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
             )
             break
 
+        step_info["df"] = app_settings.anmld_settings._step_DF
+        app_settings.anmld_settings._step_DF = app_settings.anmld_settings.DF
         cycle_info.append(step_info)
         step += 1
         pbar.update(1)
@@ -330,6 +334,19 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
     ax.set_xlabel("Step")
     ax.set_ylabel("Mode")
     ax.set_title("Selected Modes")
+    fig.tight_layout()
+    fig.savefig(PS._out_dir / PS.info_sel_modes_fig)
+
+    fig, ax = plt.subplots()
+    sns.scatterplot(
+        cycle_df["df"],
+        legend=None,
+        color=sns.color_palette()[0],
+        ax=ax,
+    )
+    ax.set_xlabel("Step")
+    ax.set_ylabel("DF")
+    ax.set_title("DF Values")
     fig.tight_layout()
     fig.savefig(PS._out_dir / PS.info_sel_modes_fig)
 
@@ -408,6 +425,14 @@ def main(
 ):
     with open(settings_path, "rb") as settings_f:
         app_settings = AppSettings(**tomllib.load(settings_f))
+
+    # TODO
+    if app_settings.LD_method == "AMBER" and (
+        chain_init is not None or chain_target is not None
+    ):
+        raise ValueError(
+            "Chain selection with AMBER backend is currently not supported"
+        )
 
     app_settings.path_settings._out_dir = out_dir
     app_settings.path_settings._out_dir.mkdir(parents=True)

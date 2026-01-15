@@ -71,7 +71,7 @@ def generate_structures(
     eig_mag_sum = eig_mag.sum(axis=0)
 
     # (mode_max, )
-    rescale = app_settings.anmld_settings.DF / jnp.sqrt(eig_mag_sum / N_nodes)
+    rescale = app_settings.anmld_settings._step_DF / jnp.sqrt(eig_mag_sum / N_nodes)
 
     ca_step = get_CAs(aa_step)
     ca_target = get_CAs(aa_target)
