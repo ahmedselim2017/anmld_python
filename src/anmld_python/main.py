@@ -232,10 +232,9 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
 
         except NonConnectedStructureError:
             if step == 0:
-                raise ValueError("The given initial structure is not fully connected")
+                raise NonConnectedStructureError("The given initial structure is not fully connected")
             else:
-                ld_logger.warning("ANM deformation produced a non-connected structure.")
-                continue
+                raise NonConnectedStructureError("ANMLD step produced a non-connected structure.")
 
         except (LDError, ValueError) as e:
             ld_logger.warning(

@@ -41,10 +41,7 @@ def run_step(
     step_logger.debug("Calculated ANM modes")
 
     if np.any(np.isclose(W, 0)):
-        pass
-        # raise NonConnectedStructureError(
-        #     "The given initial structure is not fully connected"
-        # )
+        raise NonConnectedStructureError()
 
     mode_selection = app_settings.mode_selection
 
