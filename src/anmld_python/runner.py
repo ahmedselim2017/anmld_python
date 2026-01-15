@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 from biotite.structure import AtomArray
 import biotite.structure as b_structure
+from biotite.structure.io import save_structure
 import fastpdb
 import loguru
 import numpy as np
@@ -67,9 +68,7 @@ def run_step(
 
     pred_abs_path = PS._out_dir / step_paths.step_anm_pdb
 
-    pred_file = fastpdb.PDBFile()
-    pred_file.set_structure(pred_aa)
-    pred_file.write(pred_abs_path)
+    save_structure(pred_abs_path, pred_aa)
     step_logger.debug(f"Wrote raw step coordinates to {pred_abs_path}")
 
     match app_settings.LD_method:

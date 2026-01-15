@@ -19,6 +19,7 @@ def run_pdb4amber(
     out_path: Path,
     logger: loguru.Logger,
     app_settings: AppSettings,
+    reduce: bool = True
 ):
     logger.trace("run_pdb4amber")
 
@@ -27,7 +28,10 @@ def run_pdb4amber(
         + app_settings.amber_settings.pdb4amber_cmd
     )
 
-    cmd += f" -i {in_path} -o {out_path} --reduce --dry"
+    cmd += f" -i {in_path} -o {out_path} --dry"
+    if reduce:
+        cmd += " --reduce"
+
     logger.info("Running pdb4amber")
     logger.debug(f"Running {app_settings.amber_settings.ambertools_prefix + cmd}")
     subprocess.run(
@@ -305,6 +309,7 @@ def run_ld_step(
         out_path=PS._out_dir / SP.step_amber_anm_pdb,
         logger=ld_logger,
         app_settings=app_settings,
+        reduce=False
     )
 
     with open(amber_tleap_step_in_path, "w") as amber_tleap_step_in_f:

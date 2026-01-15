@@ -236,10 +236,10 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                 ld_logger.warning("ANM deformation produced a non-connected structure.")
                 continue
 
-        except (LDError, ValueError):
+        except (LDError, ValueError) as e:
             ld_logger.warning(
                 f"The LD step returned an error. Halving the DF value to"
-                f" {app_settings.anmld_settings.DF / 2} and restarting the step"
+                f" {app_settings.anmld_settings.DF / 2} and restarting the step",
             )
             app_settings.anmld_settings.DF /= 2
             continue
@@ -295,7 +295,7 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
     )
     sns.lineplot(
         cycle_df["ca_rmsd_target"],
-        label="C-alpha RMSD to the target",
+        label=r"$\text{C}_{\alpha}$ RMSD to the target",
         color=sns.color_palette()[0],
         linestyle="dashed",
         ax=ax,
@@ -308,7 +308,7 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
     )
     sns.lineplot(
         cycle_df["ca_rmsd_init"],
-        label="C-alpha RMSD to the initial",
+        label=r"$\text{C}_{\alpha}$ RMSD to the initial",
         color=sns.color_palette()[1],
         linestyle="dashed",
         ax=ax,
