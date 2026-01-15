@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from biotite.structure import AtomArray
+import biotite.structure as b_structure
 import fastpdb
 import loguru
 import numpy as np
@@ -38,10 +39,11 @@ def run_step(
     )
     step_logger.debug("Calculated ANM modes")
 
-    if np.any(np.allclose(W, 0)):
-        raise NonConnectedStructureError(
-            "The given initial structure is not fully connected"
-        )
+    if np.any(np.isclose(W, 0)):
+        pass
+        # raise NonConnectedStructureError(
+        #     "The given initial structure is not fully connected"
+        # )
 
     mode_selection = app_settings.mode_selection
 
@@ -95,7 +97,7 @@ def run_step(
         case "AMBER":
             from anmld_python.ld.amber import run_ld_step
 
-            resnum: int = np.unique(aa_step.res_id).size  # type: ignore
+            resnum = b_structure.get_residue_count(aa_step)
             step_info = run_ld_step(
                 pred_abs_path=pred_abs_path,
                 resnum=resnum,

@@ -184,7 +184,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
 
                     aa_step = get_atomarray(PS._out_dir / PS.sanitized_init_structure)
 
-                    resnum = np.unique(aa_step.res_id).size  # type: ignore
+                    resnum = b_structure.get_residue_count(aa_step)
                     try:
                         run_setup(
                             path_abs_init=PS._out_dir / PS.sanitized_init_structure,
@@ -233,12 +233,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
             if step == 0:
                 raise ValueError("The given initial structure is not fully connected")
             else:
-                ld_logger.warning(
-                    "ANM deformation produced a non-connected structure."
-                    " Halving the DF value to"
-                    f" {app_settings.anmld_settings.DF / 2} and restarting the step"
-                )
-                app_settings.anmld_settings.DF /= 2
+                ld_logger.warning("ANM deformation produced a non-connected structure.")
                 continue
 
         except (LDError, ValueError):
@@ -257,11 +252,9 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
             < app_settings.anmld_settings.early_stopping_aa_rmsd
         ):
             step_logger.success(
-                (
-                    f"Early stopping with {float(step_info['aa_rmsd_target'])} ",
-                    "all-atom RMSD  which is below the given threshold ",
-                    f"{app_settings.anmld_settings.early_stopping_aa_rmsd}",
-                )
+                f"Early stopping with {float(step_info['aa_rmsd_target'])}"
+                " all-atom RMSD  which is below the given threshold"
+                f" {app_settings.anmld_settings.early_stopping_aa_rmsd}"
             )
             break
         elif (
@@ -269,11 +262,9 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
             < app_settings.anmld_settings.early_stopping_ca_rmsd
         ):
             step_logger.success(
-                (
-                    f"Early stopping with {float(step_info['ca_rmsd_target'])} ",
-                    "C-alpha RMSD  which is below the given threshold ",
-                    f"{app_settings.anmld_settings.early_stopping_ca_rmsd}",
-                )
+                f"Early stopping with {float(step_info['ca_rmsd_target'])}"
+                " C-alpha RMSD  which is below the given threshold"
+                f" {app_settings.anmld_settings.early_stopping_ca_rmsd}"
             )
             break
 
@@ -364,7 +355,9 @@ def cleanup(app_settings: AppSettings):
         Path(PS._out_dir / PS.amber_pdb_target_min_rst).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_ptraj_rewrite_init_in).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_pdb_rewrite_init_min_rst).unlink(missing_ok=True)
-        Path(PS._out_dir / PS.amber_ptraj_align_target2initial_in).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_ptraj_align_target2initial_in).unlink(
+            missing_ok=True
+        )
         Path(PS._out_dir / PS.amber_rms_target_align_dat).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_target_min_algn).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_pdb_initial_min_pdb).unlink(missing_ok=True)
@@ -380,7 +373,9 @@ def cleanup(app_settings: AppSettings):
             Path(PS._out_dir / step_paths.step_anm_pdb).unlink(missing_ok=True)
         elif app_settings.LD_method == "AMBER":
             Path(PS._out_dir / step_paths.step_amber_anm_pdb).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_tleap_anm_pdb).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_tleap_anm_pdb).unlink(
+                missing_ok=True
+            )
             Path(PS._out_dir / step_paths.step_amber_top).unlink(missing_ok=True)
             Path(PS._out_dir / step_paths.step_amber_coord).unlink(missing_ok=True)
             Path(PS._out_dir / step_paths.step_amber_min_out).unlink(missing_ok=True)
@@ -389,10 +384,18 @@ def cleanup(app_settings: AppSettings):
             Path(PS._out_dir / step_paths.step_amber_sim_out).unlink(missing_ok=True)
             Path(PS._out_dir / step_paths.step_amber_sim_coord).unlink(missing_ok=True)
             Path(PS._out_dir / step_paths.step_amber_sim_ener).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_sim_restart).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_ptraj_align_in).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_ptraj_rms_align_dat).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_ptraj_algn_restart).unlink(missing_ok=True)
+            Path(PS._out_dir / step_paths.step_amber_sim_restart).unlink(
+                missing_ok=True
+            )
+            Path(PS._out_dir / step_paths.step_amber_ptraj_align_in).unlink(
+                missing_ok=True
+            )
+            Path(PS._out_dir / step_paths.step_amber_ptraj_rms_align_dat).unlink(
+                missing_ok=True
+            )
+            Path(PS._out_dir / step_paths.step_amber_ptraj_algn_restart).unlink(
+                missing_ok=True
+            )
 
 
 def main(

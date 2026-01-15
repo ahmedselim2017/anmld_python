@@ -61,7 +61,7 @@ def get_atomarray(
             structure_file = b_pdbx.CIFFile.read(file_path)
             atomarray = b_pdbx.get_structure(
                 structure_file,
-                model=structure_index - 1,
+                model=structure_index + 1,
                 extra_fields=extra_fields,
                 *args,
                 **kwargs,

@@ -417,7 +417,7 @@ def run_ld_step(
     )
 
     ld_logger.debug("Aligning the LD result to the target")
-    ld_aa = get_atomarray(PS._out_dir / SP.step_anm_pdb)
+    ld_aa = get_atomarray(PS._out_dir / SP.step_anmld_pdb)
     aa_target = get_atomarray(PS._out_dir / PS.amber_pdb_target_min_pdb)
     aa_init = get_atomarray(PS._out_dir / PS.amber_pdb_initial_min_pdb)
 
