@@ -72,7 +72,8 @@ def get_atomarray(
 
     return cast(AtomArray, atomarray)
 
-def get_CAs(aa: AtomArray) -> AtomArray:
+def get_CAs(aa: AtomArray) -> AtomArray | None:
+    cas = None
     if not (cas := aa[(aa.atom_name == "CA") & (aa.element == "C")]):
         cas = aa[(aa.atom_name == "CA")]
     return cas

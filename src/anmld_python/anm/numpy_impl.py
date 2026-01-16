@@ -63,7 +63,7 @@ def calc_modes(
     mode_max: int = 30,
 ) -> tuple[np.ndarray, ...]:
     """
-    Calcuate the modes for the given Hessian matrix.
+    Calculate the modes for the given Hessian matrix.
 
     NOTE: The first 6 trivial modes are removed.
 

@@ -86,7 +86,7 @@ def process_inputs(
         except mm.OpenMMException:
             logger.warning(
                 f"The given platform {MS.platform_name} is not found."
-                " Using the dafault platform."
+                " Using the default platform."
             )
             MS.platform_obj = None
 

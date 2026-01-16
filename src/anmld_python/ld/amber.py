@@ -19,7 +19,7 @@ def run_pdb4amber(
     out_path: Path,
     logger: loguru.Logger,
     app_settings: AppSettings,
-    reduce: bool = True
+    reduce: bool = True,
 ):
     logger.trace("run_pdb4amber")
 
@@ -309,7 +309,7 @@ def run_ld_step(
         out_path=PS._out_dir / SP.step_amber_anm_pdb,
         logger=ld_logger,
         app_settings=app_settings,
-        reduce=False
+        reduce=False,
     )
 
     with open(amber_tleap_step_in_path, "w") as amber_tleap_step_in_f:
@@ -435,11 +435,11 @@ def run_ld_step(
     )
 
     msg = (
-        "Finished LD step with ",
+        "Finished LD step with "
         f"target AA RMSD: {step_info['aa_rmsd_target']} "
         f"target C-alpha RMSD: {step_info['ca_rmsd_target']} "
         f"initial AA RMSD: {step_info['aa_rmsd_init']} "
-        f"initial C-alpha RMSD: {step_info['ca_rmsd_init']} ",
+        f"initial C-alpha RMSD: {step_info['ca_rmsd_init']} "
     )
 
     ld_logger.info(msg)
