@@ -136,6 +136,21 @@ def process_inputs(
 def run_cycle(app_settings: AppSettings) -> list[dict]:
     PS = app_settings.path_settings
 
+    if app_settings.anmld_settings.continue_until_rmsd_cutoff:
+        if (
+            app_settings.anmld_settings.early_stopping_aa_rmsd == 0
+            and app_settings.anmld_settings.early_stopping_ca_rmsd == 0
+        ):
+            raise ValueError(
+                "early_stopping_aa_rmsd and early_stopping_ca_rmsd"
+                " must not be 0 when continue_until_rmsd_cutoff is set"
+            )
+        logger.warning(
+            "Using the early stopping cutoff instead of step number"
+            " as the option continue_until_rmsd_cutoff is set."
+        )
+        app_settings.anmld_settings.n_steps = float("inf") # type:ignore
+
     pbar = tqdm(
         total=app_settings.anmld_settings.n_steps,
         desc="Running ANM-LD",
