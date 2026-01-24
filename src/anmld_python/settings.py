@@ -12,9 +12,9 @@ from pydantic_settings import BaseSettings
 from openmm import Platform
 
 class SubprocessSettings(BaseModel):
-    shell: bool = PrivateAttr(True)
-    cwd: Optional[Path] = PrivateAttr(None)
-    check: bool = PrivateAttr(True)
+    shell: bool = Field(True, exclude=True)
+    cwd: Optional[Path] = Field(None, exclude=True)
+    check: bool = Field(True, exclude=True)
     executable: Path = Path("/bin/bash")
 
 class StepPathSettings(BaseSettings):
@@ -23,7 +23,7 @@ class StepPathSettings(BaseSettings):
     step_openmm_min: str    = "STEP_{step}_OpenMM_min.pdb"
     step_openmm_ld: str     = "STEP_{step}_OpenMM_ld.pdb"
 
-    step_amber_anm_pdb: str = "STEP_{step}_AMBER_ANM.pdb"
+    step_amber_anm_pdb: str = "STEP_{step}_AMBERREADY_ANM.pdb"
 
     step_amber_tleap_anm_pdb: str    = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
     step_amber_top: str     = "STEP_{step}_AMBER_raw.top"
@@ -66,10 +66,13 @@ class PathSettings(BaseSettings):
     info_sel_modes_fig: Path = Field(Path("info_sel_modes.pdf"))
     info_df_values_fig: Path = Field(Path("info_df_values.pdf"))
 
-    init_structure: str = "init.pdb"
-    target_structure: str = "target.pdb"
+    init_structure: str     = "init.pdb"
+    target_structure: str   = "target.pdb"
 
-    sanitized_init_structure: str = "sanitized_init.pdb"
+    filtered_init_structure: str    = "filtered_init.pdb"
+    filtered_target_structure: str  = "filtered_target.pdb"
+
+    sanitized_init_structure: str   = "sanitized_init.pdb"
     sanitized_target_structure: str = "sanitized_target.pdb"
 
     openmm_min_init_pdb: str            = "OpenMM_min_init.pdb"

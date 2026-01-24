@@ -3,6 +3,7 @@ from loguru import logger
 from pathlib import Path
 from typing import Optional
 import importlib.metadata
+import json
 import shutil
 import tomllib
 
@@ -102,14 +103,16 @@ def process_inputs(
     logger.info("Sanitizing the initial and target structures")
     aa_step = sanitize_structure(
         in_path=path_abs_structure_init.absolute(),
-        out_path=PS._out_dir / PS.sanitized_init_structure,
+        filtered_path=PS._out_dir / PS.filtered_init_structure,
+        sanitized_path=PS._out_dir / PS.sanitized_init_structure,
         app_settings=app_settings,
         sel_chains=chain_init,
         include_bonds=True,
     )
     aa_target = sanitize_structure(
         in_path=path_abs_structure_target.absolute(),
-        out_path=PS._out_dir / PS.sanitized_target_structure,
+        filtered_path=PS._out_dir / PS.filtered_target_structure,
+        sanitized_path=PS._out_dir / PS.sanitized_target_structure,
         app_settings=app_settings,
         sel_chains=chain_target,
         include_bonds=True,
@@ -361,7 +364,7 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
     ax.set_ylabel("DF")
     ax.set_title("DF Values")
     fig.tight_layout()
-    fig.savefig(PS._out_dir / PS.info_sel_modes_fig)
+    fig.savefig(PS._out_dir / PS.info_df_values_fig)
 
     logger.info(f"Plotted cycle results.")
 
@@ -437,7 +440,13 @@ def main(
     chain_target: Optional[list[str]] = None,
 ):
     with open(settings_path, "rb") as settings_f:
-        app_settings = AppSettings(**tomllib.load(settings_f))
+        if settings_path.suffix == ".toml":
+            app_settings = AppSettings(**tomllib.load(settings_f))
+        elif settings_path.suffix == ".json":
+            app_settings = AppSettings(**json.load(settings_f))
+        else:
+            raise ValueError("The settings file must be a JSON or TOML file.")
+
 
     # TODO
     if app_settings.LD_method == "AMBER" and (

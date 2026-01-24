@@ -150,13 +150,14 @@ def _run_pdbfixer(
 
 def sanitize_structure(
     in_path: Path,
-    out_path: Path,
+    filtered_path: Path,
+    sanitized_path: Path,
     app_settings: AppSettings,
     sel_chains: Optional[list[str]] = None,
     *args,
     **kwargs,
 ) -> AtomArray:
-    sanitization_logger = logger.bind(in_path=in_path, out_path=out_path)
+    sanitization_logger = logger.bind(in_path=in_path, out_path=sanitized_path)
     sanitization_logger.trace("Sanitizing structure")
 
     sanitization_logger.debug("Loading atomarray")
@@ -172,12 +173,11 @@ def sanitize_structure(
         sanitization_logger=sanitization_logger,
     )
 
-    tmp_path = in_path.with_stem(in_path.stem + "_tmp")
-    save_structure(file_path=str(tmp_path), array=aa)
+    save_structure(file_path=filtered_path, array=aa)
 
     if app_settings.LD_method == "OpenMM":
         topology, positions = _run_pdbfixer(
-            structure_path=tmp_path,
+            structure_path=filtered_path,
             sanitization_logger=sanitization_logger,
             app_settings=app_settings,
         )
@@ -190,21 +190,20 @@ def sanitize_structure(
             sanitization_logger=sanitization_logger,
             app_settings=app_settings,
         )
-        with open(out_path, "w") as out_file:
+        with open(sanitized_path, "w") as out_file:
             mm_app.PDBFile.writeFile(topology, positions, out_file, keepIds=True)
 
     elif app_settings.LD_method == "AMBER":
         import anmld_python.ld.amber
 
         anmld_python.ld.amber.run_pdb4amber(
-            in_path=tmp_path,
-            out_path=out_path,
+            in_path=filtered_path,
+            out_path=sanitized_path,
             logger=sanitization_logger,
             app_settings=app_settings,
         )
 
-    aa = get_atomarray(file_path=out_path, *args, **kwargs)
-    tmp_path.unlink()
+    aa = get_atomarray(file_path=sanitized_path, *args, **kwargs)
 
     return aa
 

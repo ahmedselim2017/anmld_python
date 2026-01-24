@@ -264,7 +264,7 @@ def run_setup(
     parmed_init_parm.load_rst7(str(PS._out_dir / PS.amber_pdb_rewrite_init_min_rst))
     parmed.tools.actions.addPDB(
         parmed_init_parm,
-        str(PS._out_dir / PS.init_structure),
+        str(PS._out_dir / PS.filtered_init_structure),
     ).execute()
     parmed_init_parm.save(
         str(PS._out_dir / PS.amber_pdb_initial_min_pdb),
@@ -280,7 +280,7 @@ def run_setup(
         str(PS._out_dir / PS.amber_pdb_target_top)
     )
     parmed.tools.actions.addPDB(
-        parmed_target_parm, str(PS._out_dir / PS.target_structure)
+        parmed_target_parm, str(PS._out_dir / PS.filtered_target_structure)
     ).execute()
     parmed_target_parm.load_rst7(str(PS._out_dir / PS.amber_target_min_algn))
     parmed_target_parm.save(
@@ -411,7 +411,9 @@ def run_ld_step(
     )
 
     parmed_parm = parmed.amber.AmberParm(str(PS._out_dir / SP.step_amber_top))
-    parmed.tools.actions.addPDB(parmed_parm, PS._out_dir / PS.init_structure).execute()
+    parmed.tools.actions.addPDB(
+        parmed_parm, PS._out_dir / PS.filtered_init_structure
+    ).execute()
     parmed_parm.load_rst7(str(PS._out_dir / SP.step_amber_ptraj_algn_restart))
     parmed_parm.save(
         str(PS._out_dir / SP.step_anmld_pdb),
