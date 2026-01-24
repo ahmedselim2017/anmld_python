@@ -74,17 +74,10 @@ def calc_modes(
     Returns:
         (mode_max,) shaped eigenvalues array
         (3 * N_nodes, mode_max) eigenvectors array
-        (N_nodes, mode_max) X-eigenvalues array
-        (N_nodes, mode_max) Y-eigenvalues array
-        (N_nodes, mode_max) Z-eigenvalues array
     """
     W, V = np.linalg.eigh(hessian)
 
     W = W[6 : mode_max + 6]
     V = V[:, 6 : mode_max + 6]
 
-    Vx = V[np.arange(0, hessian.shape[0], 3), :]
-    Vy = V[np.arange(1, hessian.shape[0], 3), :]
-    Vz = V[np.arange(2, hessian.shape[0], 3), :]
-
-    return W, V, Vx, Vy, Vz
+    return W, V

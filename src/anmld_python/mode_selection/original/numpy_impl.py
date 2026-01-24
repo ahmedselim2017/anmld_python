@@ -13,11 +13,9 @@ from anmld_python.tools import get_CAs
 def select_modes(
     ca_coords_step: np.ndarray,
     ca_coords_target: np.ndarray,
-    Vx_step: np.ndarray,
-    Vy_step: np.ndarray,
-    Vz_step: np.ndarray,
+    V: np.ndarray,
 ) -> tuple[int, float]:
-    N_nodes, N_modes = Vx_step.shape
+    N_nodes = V.shape[0] // 3
 
     # (N_nodes, 3)
     diff_vector = ca_coords_target - ca_coords_step
@@ -26,20 +24,14 @@ def select_modes(
     # [Xdiff1, Ydiff1, Zdiff1, Xdiff2, Ydiff2, Zdiff2, ...]
     diff_vector = diff_vector.reshape((3 * N_nodes,))
 
-    # (3 * N_nodes, N_modes)
-    # Each column is [Xdiff1, Ydiff1, Zdiff1, Xdiff2, Ydiff2, Zdiff2, ...]
-    # for one mode
-    mode_vectors = np.stack((Vx_step, Vy_step, Vz_step), axis=1)
-    mode_vectors = np.reshape(mode_vectors, (3 * N_nodes, N_modes))
-
     norm_diff = np.linalg.norm(diff_vector)
-    norm_modes = np.linalg.norm(mode_vectors, axis=0)
+    norm_modes = np.linalg.norm(V, axis=0)
 
     # (N_modes, )
     norms = norm_diff * norm_modes
 
     # (N_modes, )
-    dots = np.dot(diff_vector, mode_vectors)
+    dots = np.dot(diff_vector, V)
 
     # (N_modes, )
     abs_cos_sims = dots / norms
@@ -52,48 +44,33 @@ def select_modes(
 def generate_structures(
     aa_step: AtomArray,
     aa_target: AtomArray,
-    Vx_step: np.ndarray,
-    Vy_step: np.ndarray,
-    Vz_step: np.ndarray,
+    V: np.ndarray,
     step_logger: loguru.Logger,
     app_settings: AppSettings,
 ) -> tuple[AtomArray, dict]:
-    N_nodes = Vx_step.shape[0]
-
-    # (N_nodes, mode_max)
-    eig_mag = Vx_step**2 + Vy_step**2 + Vz_step**2
-
-    # NOTE: Isn't this always have 1s at all elements as the eigecs are normalized?
-    # (mode_max, )
-    eig_mag_sum = eig_mag.sum(axis=0)
-
-    # (mode_max, )
-    rescale = app_settings.anmld_settings._step_DF / np.sqrt(eig_mag_sum / N_nodes)
+    N_nodes = V.shape[0] // 3
 
     ca_step = get_CAs(aa_step)
     ca_target = get_CAs(aa_target)
 
-    sel_mode_idx, sel_mode_cos_sim = select_modes(
+    mode_idx, sel_mode_cos_sim = select_modes(
         ca_coords_step=ca_step.coord,
         ca_coords_target=ca_target.coord,
-        Vx_step=Vx_step,
-        Vy_step=Vy_step,
-        Vz_step=Vz_step,
+        V=V,
     )
-    step_logger.info(f"Selected mode number: {sel_mode_idx + 1}")
+    step_logger.info(f"Selected mode number: {mode_idx + 1}")
     step_logger.debug(f"Selected mode cosine sim: {sel_mode_cos_sim}")
 
-    sel_mode_sign = np.sign(sel_mode_cos_sim)
+    mode_sign = np.sign(sel_mode_cos_sim)
 
     aa_pred = aa_step.copy()
 
-    res_mvmt_X = np.asarray(Vx_step[:, sel_mode_idx] * sel_mode_sign)
-    res_mvmt_Y = np.asarray(Vy_step[:, sel_mode_idx] * sel_mode_sign)
-    res_mvmt_Z = np.asarray(Vz_step[:, sel_mode_idx] * sel_mode_sign)
+    rescale = app_settings.anmld_settings._step_DF / np.sqrt(1 / N_nodes)
 
-    res_mvmt_X *= rescale[sel_mode_idx]
-    res_mvmt_Y *= rescale[sel_mode_idx]
-    res_mvmt_Z *= rescale[sel_mode_idx]
+    # Each column of V is [Xdiff1, Ydiff1, Zdiff1, Xdiff2, Ydiff2, Zdiff2, ...]
+    res_mvmt_X = V[0::3, mode_idx] * mode_sign * rescale
+    res_mvmt_Y = V[1::3, mode_idx] * mode_sign * rescale
+    res_mvmt_Z = V[2::3, mode_idx] * mode_sign * rescale
 
     atom_res_mvmt_X = b_structure.spread_residue_wise(aa_pred, res_mvmt_X)
     atom_res_mvmt_Y = b_structure.spread_residue_wise(aa_pred, res_mvmt_Y)
@@ -104,6 +81,6 @@ def generate_structures(
     aa_pred.coord[:, 2] += atom_res_mvmt_Z
 
     return aa_pred, {
-        "mode_number": int(sel_mode_idx) + 1,
+        "mode_number": int(mode_idx) + 1,
         "cos_sim": float(sel_mode_cos_sim),
     }

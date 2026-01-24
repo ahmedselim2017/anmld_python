@@ -39,6 +39,11 @@ environments = [
     "sys_platform == 'linux'"
 ]
 
+[dependency-groups]
+dev = [
+    "ipdb>=0.13.13",
+]
+
 [project.optional-dependencies]
 dev = [
     "hypothesis>=6.140.2",

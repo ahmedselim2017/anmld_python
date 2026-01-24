@@ -6,10 +6,10 @@ import jax.numpy as jnp
 
 @jax.jit
 def build_hessian(
-    coords: jax.Array,
+    coords: jnp.ndarray,
     cutoff: float = 15.0,
     gamma: float = 1.0,
-) -> jax.Array:
+) -> jnp.ndarray:
     """
     Calculate the Hessian matrix for the given CA coordinates.
 
@@ -59,9 +59,9 @@ def build_hessian(
 
 @partial(jax.jit, static_argnames=["mode_max"])
 def calc_modes(
-    hessian: jax.Array,
+    hessian: jnp.ndarray,
     mode_max: int = 30,
-) -> tuple[jax.Array, ...]:
+) -> tuple[jnp.ndarray, ...]:
     """
     Calculate the modes for the given Hessian matrix.
 
@@ -74,17 +74,10 @@ def calc_modes(
     Returns:
         (mode_max,) shaped eigenvalues array
         (3 * N_nodes, mode_max) eigenvectors array
-        (N_nodes, mode_max) X-eigenvalues array
-        (N_nodes, mode_max) Y-eigenvalues array
-        (N_nodes, mode_max) Z-eigenvalues array
     """
     W, V = jnp.linalg.eigh(hessian)
 
     W = W[6 : mode_max + 6]
     V = V[:, 6 : mode_max + 6]
 
-    Vx = V[jnp.arange(0, hessian.shape[0], 3), :]
-    Vy = V[jnp.arange(1, hessian.shape[0], 3), :]
-    Vz = V[jnp.arange(2, hessian.shape[0], 3), :]
-
-    return W, V, Vx, Vy, Vz
+    return W, V

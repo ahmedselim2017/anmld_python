@@ -34,7 +34,7 @@ def run_step(
         gamma=app_settings.anmld_settings.gamma_ANM,
     )
     step_logger.debug("Calculated the Hessian matrix")
-    W, _, Vx_step, Vy_step, Vz_step = ANM.calc_modes(
+    W, V = ANM.calc_modes(
         hessian=hessian_step,
         mode_max=app_settings.anmld_settings.max_mode,
     )
@@ -56,9 +56,7 @@ def run_step(
             pred_aa, sel_info = generate_structures(
                 aa_step=aa_step,
                 aa_target=aa_target,
-                Vx_step=Vx_step,
-                Vy_step=Vy_step,
-                Vz_step=Vz_step,
+                V=V,
                 step_logger=step_logger,
                 app_settings=app_settings,
             )
