@@ -83,6 +83,7 @@ def run_setup(
               ntb = {AS.min.ntb},
               saltcon = {AS.min.saltcon},
               igb = {AS.min.igb},
+              dx0 = {AS.min.dx0}
              &end
                    """)
         )
