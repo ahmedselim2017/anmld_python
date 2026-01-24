@@ -214,7 +214,7 @@ def calc_aa_ca_rmsd(
 ) -> tuple[Optional[float], float]:
     aa_rmsd = None
     aa_aligned = None
-    if not app_settings.different_topologies:
+    if not app_settings._different_topologies:
         aa_aligned, _ = b_structure.superimpose(fixed=aa_fixed, mobile=aa_mobile)
         aa_rmsd = float(b_structure.rmsd(aa_fixed, aa_aligned))
 
@@ -230,7 +230,7 @@ def calc_aa_ca_rmsd(
 def safe_superimpose(
     aa_fixed: AtomArray, aa_mobile: AtomArray, app_settings: AppSettings
 ) -> AtomArray:
-    if app_settings.different_topologies:
+    if app_settings._different_topologies:
         aa_aligned, _, _, _ = b_structure.superimpose_homologs(
             fixed=aa_fixed,
             mobile=aa_mobile,

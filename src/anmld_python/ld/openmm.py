@@ -246,7 +246,7 @@ def run_ld_step(
     )
 
     ld_aa_rmsd_target = None
-    if not app_settings.different_topologies:
+    if not app_settings._different_topologies:
         ld_aa_rmsd_target = b_structure.rmsd(aa_target, ld_aligned_aa)
 
     ld_ca = get_CAs(ld_aa)

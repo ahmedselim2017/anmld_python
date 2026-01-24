@@ -12,9 +12,9 @@ from pydantic_settings import BaseSettings
 from openmm import Platform
 
 class SubprocessSettings(BaseModel):
-    shell: bool = True
-    cwd: Optional[Path] = Field(None, init=False)
-    check: bool = True
+    shell: bool = PrivateAttr(True)
+    cwd: Optional[Path] = PrivateAttr(None)
+    check: bool = PrivateAttr(True)
     executable: Path = Path("/bin/bash")
 
 class StepPathSettings(BaseSettings):
@@ -160,8 +160,8 @@ class OpenMMSettings(BaseSettings):
     ld_step: PositiveInt = Field(100)
     ld_temp: PositiveFloat = Field(310)
 
-    save_min: bool = False
-    save_ld: bool = False
+    save_min: bool =Field(False)
+    save_ld: bool = Field(False)
 
     platform_name: Literal["CPU", "OpenCL", "CUDA", "HIP"] = Field(
         "CUDA", alias="platform"
@@ -171,6 +171,10 @@ class OpenMMSettings(BaseSettings):
 
 class ANMLDSettings(BaseSettings):
     n_steps: PositiveInt = Field(100)
+    early_stopping_aa_rmsd: float = Field(0)
+    early_stopping_ca_rmsd: float = Field(0)
+    continue_until_rmsd_cutoff: bool = Field(False)
+
     rcut_ANM: PositiveFloat = Field(8)
     gamma_ANM: float = Field(1.0)
     DF: PositiveFloat = Field(0.6)
@@ -178,8 +182,6 @@ class ANMLDSettings(BaseSettings):
     # DF_SC_ratio: PositiveFloat = Field(1) TODO
     max_mode: PositiveInt = Field(30)
 
-    early_stopping_aa_rmsd: float = Field(0)
-    early_stopping_ca_rmsd: float = Field(0)
 
 
 
@@ -197,7 +199,7 @@ class AppSettings(BaseSettings):
 
     cleanup: bool = Field(False, alias="clean_temporary_files")
 
-    different_topologies: bool = Field(False, init=False)
+    _different_topologies: bool = PrivateAttr(False)
     sanitization_max_retry: PositiveInt = 10
 
     anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")   # type: ignore
