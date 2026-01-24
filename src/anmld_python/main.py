@@ -71,6 +71,15 @@ def process_inputs(
     PS = app_settings.path_settings
     PS._out_dir = PS._out_dir.absolute()
 
+    with open(PS._out_dir / PS._out_settings_path, "w") as f:
+        f.write(
+            app_settings.model_dump_json(
+                indent=4,
+                by_alias=True,
+                round_trip=True,
+            )
+        )
+
     shutil.copy(path_abs_structure_init, PS._out_dir / PS.init_structure)
     shutil.copy(path_abs_structure_target, PS._out_dir / PS.target_structure)
 
@@ -232,9 +241,13 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
 
         except NonConnectedStructureError:
             if step == 0:
-                raise NonConnectedStructureError("The given initial structure is not fully connected")
+                raise NonConnectedStructureError(
+                    "The given initial structure is not fully connected"
+                )
             else:
-                raise NonConnectedStructureError("ANMLD step produced a non-connected structure.")
+                raise NonConnectedStructureError(
+                    "ANMLD step produced a non-connected structure."
+                )
 
         except (LDError, ValueError) as e:
             ld_logger.warning(

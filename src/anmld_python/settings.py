@@ -59,6 +59,7 @@ class StepPathSettings(BaseSettings):
 
 class PathSettings(BaseSettings):
     _out_dir: Path = PrivateAttr()
+    _out_settings_path: Path = PrivateAttr(Path("settings.json"))
     info_csv: Path = Field(Path("info.csv"))
     info_rmsd_fig: Path = Field(Path("info_RMSDs.pdf"))
     info_sel_modes_fig: Path = Field(Path("info_sel_modes.pdf"))
