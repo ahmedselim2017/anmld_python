@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import cast
 
 from biotite.structure import AtomArray
 import biotite.structure as b_structure
@@ -24,21 +23,12 @@ def select_modes(
     # [Xdiff1, Ydiff1, Zdiff1, Xdiff2, Ydiff2, Zdiff2, ...]
     diff_vector = diff_vector.reshape((3 * N_nodes,))
 
-    norm_diff = np.linalg.norm(diff_vector)
-    norm_modes = np.linalg.norm(V, axis=0)
-
-    # (N_modes, )
-    norms = norm_diff * norm_modes
-
     # (N_modes, )
     dots = np.dot(diff_vector, V)
 
-    # (N_modes, )
-    abs_cos_sims = dots / norms
+    sel_mode_idx = np.argmax(np.abs(dots))
 
-    sel_mode_idx = np.argmax(np.abs(abs_cos_sims))
-
-    return sel_mode_idx, abs_cos_sims[sel_mode_idx]
+    return sel_mode_idx, dots[sel_mode_idx]
 
 
 def generate_structures(
@@ -53,15 +43,15 @@ def generate_structures(
     ca_step = get_CAs(aa_step)
     ca_target = get_CAs(aa_target)
 
-    mode_idx, sel_mode_cos_sim = select_modes(
+    mode_idx, sel_mode_dot = select_modes(
         ca_coords_step=ca_step.coord,
         ca_coords_target=ca_target.coord,
         V=V,
     )
     step_logger.info(f"Selected mode number: {mode_idx + 1}")
-    step_logger.debug(f"Selected mode cosine sim: {sel_mode_cos_sim}")
+    step_logger.debug(f"Selected mode dot product: {sel_mode_dot}")
 
-    mode_sign = np.sign(sel_mode_cos_sim)
+    mode_sign = np.sign(sel_mode_dot)
 
     aa_pred = aa_step.copy()
 
@@ -82,5 +72,5 @@ def generate_structures(
 
     return aa_pred, {
         "mode_number": int(mode_idx) + 1,
-        "cos_sim": float(sel_mode_cos_sim),
+        "dot_prod": float(sel_mode_dot),
     }
