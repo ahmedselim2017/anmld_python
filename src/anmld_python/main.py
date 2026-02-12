@@ -156,6 +156,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
         desc="Running ANM-LD",
     )
     mm_min_sim = mm_ld_sim = None
+    finished_setup = False
     step = 0
 
     cycle_info = []
@@ -173,7 +174,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
             n_maxdigit=len(str(app_settings.anmld_settings.n_steps)),
         )
 
-        if step == 0:
+        if not finished_setup:
             step_logger.trace("Starting ANM-LD setup")
             match app_settings.LD_method:
                 case "OpenMM":
@@ -244,6 +245,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                             f" {PS._out_dir / PS.amber_pdb_target_min_pdb}"
                         )
                         raise e
+            finished_setup = True
             step_logger.info("Finished ANM-LD setup")
 
         try:
