@@ -149,7 +149,7 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
             "Using the early stopping cutoff instead of step number"
             " as the option continue_until_rmsd_cutoff is set."
         )
-        app_settings.anmld_settings.n_steps = float("inf") # type:ignore
+        app_settings.anmld_settings.n_steps = float("inf")  # type:ignore
 
     pbar = tqdm(
         total=app_settings.anmld_settings.n_steps,
@@ -403,9 +403,9 @@ def cleanup(app_settings: AppSettings):
         Path(PS._out_dir / PS.amber_pdb_target_min_out).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_pdb_target_min_coord).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_pdb_target_min_rst).unlink(missing_ok=True)
-        Path(PS._out_dir / PS.amber_ptraj_rewrite_init_in).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_cpptraj_rewrite_init_in).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_pdb_rewrite_init_min_rst).unlink(missing_ok=True)
-        Path(PS._out_dir / PS.amber_ptraj_align_target2initial_in).unlink(
+        Path(PS._out_dir / PS.amber_cpptraj_align_target2initial_in).unlink(
             missing_ok=True
         )
         Path(PS._out_dir / PS.amber_rms_target_align_dat).unlink(missing_ok=True)
@@ -413,37 +413,45 @@ def cleanup(app_settings: AppSettings):
         Path(PS._out_dir / PS.amber_pdb_initial_min_pdb).unlink(missing_ok=True)
         Path(PS._out_dir / PS.amber_pdb_target_min_pdb).unlink(missing_ok=True)
 
+        Path(PS._out_dir / PS.amber_tleap_init_stdout).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pmemd_min_init_stdout).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_pmemd_min_target_stdout).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_cpptraj_rewrite_stdout).unlink(missing_ok=True)
+        Path(PS._out_dir / PS.amber_cpptraj_align_stdout).unlink(missing_ok=True)
+
     for step in range(app_settings.anmld_settings.n_steps):
-        step_paths = PS.step_path_settings.format_step(
+        SP = PS.step_path_settings.format_step(
             step=step,
             n_maxdigit=len(str(app_settings.anmld_settings.n_steps)),
         )
 
         if app_settings.LD_method == "OpenMM":
-            Path(PS._out_dir / step_paths.step_anm_pdb).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_anm_pdb).unlink(missing_ok=True)
         elif app_settings.LD_method == "AMBER":
-            Path(PS._out_dir / step_paths.step_amber_anm_pdb).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_tleap_anm_pdb).unlink(
+            Path(PS._out_dir / SP.step_amber_anm_pdb).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_tleap_anm_pdb).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_top).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_coord).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_min_out).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_min_coord).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_min_rst).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_sim_out).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_sim_coord).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_sim_ener).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_sim_restart).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_cpptraj_align_in).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_cpptraj_rms_align_dat).unlink(
                 missing_ok=True
             )
-            Path(PS._out_dir / step_paths.step_amber_top).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_coord).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_min_out).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_min_coord).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_min_rst).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_sim_out).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_sim_coord).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_sim_ener).unlink(missing_ok=True)
-            Path(PS._out_dir / step_paths.step_amber_sim_restart).unlink(
+            Path(PS._out_dir / SP.step_amber_cpptraj_algn_restart).unlink(
                 missing_ok=True
             )
-            Path(PS._out_dir / step_paths.step_amber_ptraj_align_in).unlink(
-                missing_ok=True
-            )
-            Path(PS._out_dir / step_paths.step_amber_ptraj_rms_align_dat).unlink(
-                missing_ok=True
-            )
-            Path(PS._out_dir / step_paths.step_amber_ptraj_algn_restart).unlink(
+
+            Path(PS._out_dir / SP.step_amber_pdb4amber_stdout_stderr).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_tleap_stdout).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_pmemd_min_stdout).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_pmemd_sim_stdout).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_cpptraj_align_stdout).unlink(
                 missing_ok=True
             )
 
@@ -463,7 +471,6 @@ def main(
             app_settings = AppSettings(**json.load(settings_f))
         else:
             raise ValueError("The settings file must be a JSON or TOML file.")
-
 
     # TODO
     if app_settings.LD_method == "AMBER" and (

@@ -25,6 +25,12 @@ class StepPathSettings(BaseSettings):
 
     step_amber_anm_pdb: str = "STEP_{step}_AMBERREADY_ANM.pdb"
 
+    step_amber_pdb4amber_stdout_stderr: str = "STEP_{step}_AMBER_pdb4amber_stdout_stderr.txt"
+    step_amber_tleap_stdout: str            = "STEP_{step}_AMBER_tleap_stdout.txt"
+    step_amber_pmemd_min_stdout: str        = "STEP_{step}_AMBER_pmemd_min_stdout.txt"
+    step_amber_pmemd_sim_stdout: str        = "STEP_{step}_AMBER_pmemd_sim_stdout.txt"
+    step_amber_cpptraj_align_stdout: str    = "STEP_{step}_AMBER_cpptraj_align_stdout.txt"
+
     step_amber_tleap_anm_pdb: str    = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
     step_amber_top: str     = "STEP_{step}_AMBER_raw.top"
     step_amber_coord: str   = "STEP_{step}_AMBER_raw.coord"
@@ -38,9 +44,9 @@ class StepPathSettings(BaseSettings):
     step_amber_sim_ener: str    = "STEP_{step}_AMBER_sim.ener"
     step_amber_sim_restart: str = "STEP_{step}_AMBER_sim.restart"
 
-    step_amber_ptraj_align_in: str      = "STEP_{step}_AMBER_sim_ptraj_align.in"
-    step_amber_ptraj_rms_align_dat: str = "STEP_{step}_AMBER_rms.dat"
-    step_amber_ptraj_algn_restart: str = "STEP_{step}_AMBER_algn.restart"
+    step_amber_cpptraj_align_in: str      = "STEP_{step}_AMBER_sim_cpptraj_align.in"
+    step_amber_cpptraj_rms_align_dat: str = "STEP_{step}_AMBER_rms.dat"
+    step_amber_cpptraj_algn_restart: str = "STEP_{step}_AMBER_algn.restart"
 
     step_anmld_pdb: str = "STEP_{step}_ANMLD.pdb"
 
@@ -98,15 +104,22 @@ class PathSettings(BaseSettings):
     amber_pdb_target_min_coord: Path    = Path("AMBER_pdb_target_min.coord")
     amber_pdb_target_min_rst: Path      = Path("AMBER_pdb_target_min.rst")
 
-    amber_ptraj_rewrite_init_in: Path       = Path("AMBER_ptraj_rewrite_initial.in")
+    amber_cpptraj_rewrite_init_in: Path       = Path("AMBER_cpptraj_rewrite_initial.in")
     amber_pdb_rewrite_init_min_rst: Path    = Path("AMBER_initial_min.rst")
 
-    amber_ptraj_align_target2initial_in: Path   = Path("AMBER_ptraj_align_target2initial.in")
+    amber_cpptraj_align_target2initial_in: Path   = Path("AMBER_cpptraj_align_target2initial.in")
     amber_rms_target_align_dat: Path            = Path("AMBER_rms_target_align.dat")
     amber_target_min_algn: Path                 = Path("AMBER_target_min_algn.rst")
 
     amber_pdb_initial_min_pdb: Path     = Path("AMBER_pdb_initial_min.pdb")
-    amber_pdb_target_min_pdb: Path     = Path("AMBER_pdb_target_min.pdb")
+    amber_pdb_target_min_pdb: Path      = Path("AMBER_pdb_target_min.pdb")
+
+    amber_tleap_init_stdout: Path       = Path("AMBER_tleap_init_stdout.txt")
+    amber_pmemd_min_init_stdout: Path   = Path("AMBER_pmemd_min_initial_stdout.txt")
+    amber_pmemd_min_target_stdout: Path = Path("AMBER_pmemd_min_target_stdout.txt")
+    amber_cpptraj_rewrite_stdout: Path  = Path("AMBER_cpptraj_rewrite_stdout.txt")
+    amber_cpptraj_align_stdout: Path    = Path("AMBER_cpptraj_align_stdout.txt")
+
 
     step_path_settings: StepPathSettings = Field(StepPathSettings() ,alias="STEP_PATHS")
 
@@ -149,6 +162,7 @@ class AmberSettings(BaseSettings):
     forcefield: str = Field("leaprc.protein.ff14SB")
     pmemd_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
     pmemd_cmd: str = "pmemd.cuda"
+    pmemd_dpfp_cmd: str = "pmemd.cuda_DPFP"
     ambertools_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
     pdb4amber_cmd: str = "pdb4amber"
     pdb4amber_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "

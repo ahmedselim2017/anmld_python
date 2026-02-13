@@ -24,6 +24,7 @@ class LDError(Exception):
 class NonConnectedStructureError(Exception):
     pass
 
+
 def get_atomarray(
     file_path: Path,
     structure_index: int = 0,
@@ -71,6 +72,7 @@ def get_atomarray(
             raise ValueError(emsg)
 
     return cast(AtomArray, atomarray)
+
 
 def get_CAs(aa: AtomArray) -> AtomArray | None:
     cas = None
@@ -199,6 +201,9 @@ def sanitize_structure(
         anmld_python.ld.amber.run_pdb4amber(
             in_path=filtered_path,
             out_path=sanitized_path,
+            stdout_stderr_redirection_path=sanitized_path.with_name(
+                sanitized_path.stem + "_pdb4amber_stdout.txt"
+            ),
             logger=sanitization_logger,
             app_settings=app_settings,
         )

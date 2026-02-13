@@ -17,6 +17,7 @@ class tleapError(Exception):
 def run_pdb4amber(
     in_path: Path,
     out_path: Path,
+    stdout_stderr_redirection_path: Path,
     logger: loguru.Logger,
     app_settings: AppSettings,
     reduce: bool = True,
@@ -34,10 +35,14 @@ def run_pdb4amber(
 
     logger.info("Running pdb4amber")
     logger.debug(f"Running {app_settings.amber_settings.ambertools_prefix + cmd}")
-    subprocess.run(
-        app_settings.amber_settings.ambertools_prefix + cmd,
-        **app_settings.subprocess_settings.__dict__,
-    )
+
+    with open(stdout_stderr_redirection_path, "w") as f:
+        subprocess.run(
+            app_settings.amber_settings.ambertools_prefix + cmd,
+            **app_settings.subprocess_settings.__dict__,
+            stdout=f,
+            stderr=subprocess.STDOUT,
+        )
 
 
 def check_pmemd_out(out_path: Path, logger: loguru.Logger):
@@ -57,6 +62,66 @@ def check_pmemd_out(out_path: Path, logger: loguru.Logger):
             logger.trace(f"Found {keyword=} in pmemd output {out_path=}")
             return False
     return True
+
+
+def safe_pmemd(
+    overwrite: bool,
+    mdin: Path,
+    prmtop: Path,
+    inpcrd: Path,
+    mdout: Path,
+    mdcrd: Path,
+    restrt: Path,
+    stdout_path: Path,
+    ld_logger: loguru.Logger,
+    app_settings: AppSettings,
+    mden: Path | None = None,
+):
+    cmd_opts = [
+        f"-i '{mdin}'",
+        f"-p '{prmtop}'",
+        f"-c '{inpcrd}'",
+        f"-o '{mdout}'",
+        f"-x '{mdcrd}'",
+        f"-r '{restrt}'",
+    ]
+    if overwrite:
+        cmd_opts.insert(0, "-O")
+    if mden:
+        cmd_opts.append(f"-e '{mden}'")
+
+    AS = app_settings.amber_settings
+
+    cmd = AS.pmemd_prefix + AS.pmemd_cmd + " " + " ".join(cmd_opts)
+    ld_logger.info(f"Running pmemd min for {inpcrd}")
+    ld_logger.debug("Running {cmd}", cmd=cmd)
+
+    with open(stdout_path, "w") as f:
+        subprocess.run(
+            cmd,
+            **app_settings.subprocess_settings.__dict__,
+            stdout=f,
+        )
+
+    if check_pmemd_out(mdout, ld_logger):
+        return True
+
+    ld_logger.warning(
+        f"pmemd command for {inpcrd} has failed. Retrying with double precision."
+    )
+
+    cmd = AS.pmemd_prefix + AS.pmemd_dpfp_cmd + " " + " ".join(cmd_opts)
+    ld_logger.info(f"Running pmemd min for {inpcrd}")
+    ld_logger.debug("Running {cmd}", cmd=cmd)
+
+    with open(stdout_path, "w") as f:
+        subprocess.run(
+            cmd,
+            **app_settings.subprocess_settings.__dict__,
+            stdout=f,
+        )
+
+    return check_pmemd_out(mdout, ld_logger)
 
 
 def run_setup(
@@ -144,10 +209,13 @@ def run_setup(
     cmd_tleap = f'tleap -f "{PS._out_dir / PS.amber_tleap_init_in}"'
     ld_logger.info("Running tleap")
     ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_tleap)
-    subprocess.run(
-        AS.ambertools_prefix + cmd_tleap,
-        **app_settings.subprocess_settings.__dict__,
-    )
+
+    with open(PS._out_dir / PS.amber_tleap_init_stdout, "w") as f:
+        subprocess.run(
+            AS.ambertools_prefix + cmd_tleap,
+            **app_settings.subprocess_settings.__dict__,
+            stdout=f,
+        )
 
     if (
         not (PS._out_dir / PS.amber_pdb_init_top).is_file()
@@ -163,42 +231,34 @@ def run_setup(
         ld_logger.error(emsg)
         raise tleapError().with_traceback(None) from None
 
-    cmd_amber_initial = dedent(f"""\
-                            $AMBERHOME/bin/{AS.pmemd_cmd} -O                        \\
-                                -i "{PS._out_dir / PS.amber_min_in}"             \\
-                                -p "{PS._out_dir / PS.amber_pdb_init_top}"       \\
-                                -c "{PS._out_dir / PS.amber_pdb_init_coord}"     \\
-                                -o "{PS._out_dir / PS.amber_pdb_init_min_out}"   \\
-                                -x "{PS._out_dir / PS.amber_pdb_init_min_coord}" \\
-                                -r "{PS._out_dir / PS.amber_pdb_init_min_rst}"   \\
-                                </dev/null""")
-    cmd_amber_target = dedent(f"""\
-                            $AMBERHOME/bin/{AS.pmemd_cmd} -O                            \\
-                                -i "{PS._out_dir / PS.amber_min_in}"                 \\
-                                -p "{PS._out_dir / PS.amber_pdb_target_top}"         \\
-                                -c "{PS._out_dir / PS.amber_pdb_target_coord}"       \\
-                                -o "{PS._out_dir / PS.amber_pdb_target_min_out}"     \\
-                                -x "{PS._out_dir / PS.amber_pdb_target_min_coord}"   \\
-                                -r "{PS._out_dir / PS.amber_pdb_target_min_rst}"     \\
-                                </dev/null""")
-    ld_logger.info("Running pmemd min for the initial structure")
-    ld_logger.debug("Running {cmd}", cmd=AS.pmemd_prefix + cmd_amber_initial)
-    subprocess.run(
-        AS.pmemd_prefix + cmd_amber_initial,
-        **app_settings.subprocess_settings.__dict__,
-    )
-    if not check_pmemd_out(PS._out_dir / PS.amber_pdb_init_min_out, ld_logger):
+    if not safe_pmemd(
+        overwrite=True,
+        mdin=PS._out_dir / PS.amber_min_in,
+        prmtop=PS._out_dir / PS.amber_pdb_init_top,
+        inpcrd=PS._out_dir / PS.amber_pdb_init_coord,
+        mdout=PS._out_dir / PS.amber_pdb_init_min_out,
+        mdcrd=PS._out_dir / PS.amber_pdb_init_min_coord,
+        restrt=PS._out_dir / PS.amber_pdb_init_min_rst,
+        stdout_path=PS._out_dir / PS.amber_pmemd_min_init_stdout,
+        ld_logger=ld_logger,
+        app_settings=app_settings,
+    ):
         emsg = "The pmemd minimization of the initial structure failed."
         ld_logger.error(emsg)
         raise LDError(emsg) from None
 
-    ld_logger.info("Running pmemd min for the target structure")
-    ld_logger.debug("Running {cmd}", cmd=AS.pmemd_prefix + cmd_amber_target)
-    subprocess.run(
-        AS.pmemd_prefix + cmd_amber_target,
-        **app_settings.subprocess_settings.__dict__,
-    )
-    if not check_pmemd_out(PS._out_dir / PS.amber_pdb_target_min_out, ld_logger):
+    if not safe_pmemd(
+        overwrite=True,
+        mdin=PS._out_dir / PS.amber_min_in,
+        prmtop=PS._out_dir / PS.amber_pdb_target_top,
+        inpcrd=PS._out_dir / PS.amber_pdb_target_coord,
+        mdout=PS._out_dir / PS.amber_pdb_target_min_out,
+        mdcrd=PS._out_dir / PS.amber_pdb_target_min_coord,
+        restrt=PS._out_dir / PS.amber_pdb_target_min_rst,
+        stdout_path=PS._out_dir / PS.amber_pmemd_min_target_stdout,
+        ld_logger=ld_logger,
+        app_settings=app_settings,
+    ):
         emsg = "The pmemd minimization of the target structure failed."
         ld_logger.error(emsg)
         raise LDError(emsg) from None
@@ -206,10 +266,10 @@ def run_setup(
     # create initial_min.rst (rewrite to be able to read by ambmsk,
     # version problem as noted by the deprecated MATLAB version of ANMLD)
     with open(
-        PS._out_dir / PS.amber_ptraj_rewrite_init_in,
+        PS._out_dir / PS.amber_cpptraj_rewrite_init_in,
         "w",
-    ) as amber_ptraj_rewrite_initial_f:
-        amber_ptraj_rewrite_initial_f.write(
+    ) as f:
+        f.write(
             dedent(f"""\
                     trajin "{PS._out_dir / PS.amber_pdb_init_min_rst}"
                     trajout "{PS._out_dir / PS.amber_pdb_rewrite_init_min_rst}" restart
@@ -217,25 +277,27 @@ def run_setup(
         )
         ld_logger.trace(
             "Wrote file at {path}",
-            path=PS._out_dir / PS.amber_ptraj_rewrite_init_in,
+            path=PS._out_dir / PS.amber_cpptraj_rewrite_init_in,
         )
 
     cmd_rewrite = dedent(f"""cpptraj                                    \\
                                 "{PS._out_dir / PS.amber_pdb_init_top}"  \\
-                                "{PS._out_dir / PS.amber_ptraj_rewrite_init_in}\"""")
+                                "{PS._out_dir / PS.amber_cpptraj_rewrite_init_in}\"""")
     ld_logger.info("Running cpptraj")
     ld_logger.debug("Ran {cmd}", cmd=AS.ambertools_prefix + cmd_rewrite)
-    subprocess.run(
-        AS.ambertools_prefix + cmd_rewrite,
-        **app_settings.subprocess_settings.__dict__,
-    )
+    with open(PS._out_dir / PS.amber_cpptraj_rewrite_stdout, "w") as f:
+        subprocess.run(
+            AS.ambertools_prefix + cmd_rewrite,
+            **app_settings.subprocess_settings.__dict__,
+            stdout=f,
+        )
 
     # Create AMBER_target_min_algn.rst
     with open(
-        PS._out_dir / PS.amber_ptraj_align_target2initial_in,
+        PS._out_dir / PS.amber_cpptraj_align_target2initial_in,
         "w",
-    ) as amber_ptraj_align_target2initial_f:
-        amber_ptraj_align_target2initial_f.write(
+    ) as f:
+        f.write(
             dedent(f"""\
                     parm "{PS._out_dir / PS.amber_pdb_init_top}" [initial-top]
                     parm "{PS._out_dir / PS.amber_pdb_target_top}" [target-top]
@@ -247,18 +309,20 @@ def run_setup(
         )
         ld_logger.trace(
             "Wrote file at {path}",
-            path=PS._out_dir / PS.amber_ptraj_align_target2initial_in,
+            path=PS._out_dir / PS.amber_cpptraj_align_target2initial_in,
         )
 
     cmd_align = dedent(f"""cpptraj                                      \\
                             "{PS._out_dir / PS.amber_pdb_target_top}"    \\
-                            "{PS._out_dir / PS.amber_ptraj_align_target2initial_in}\"""")
+                            "{PS._out_dir / PS.amber_cpptraj_align_target2initial_in}\"""")
     ld_logger.info("Running cpptraj")
     ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_align)
-    subprocess.run(
-        AS.ambertools_prefix + cmd_align,
-        **app_settings.subprocess_settings.__dict__,
-    )
+    with open(PS._out_dir / PS.amber_cpptraj_align_stdout, "w") as f:
+        subprocess.run(
+            AS.ambertools_prefix + cmd_align,
+            **app_settings.subprocess_settings.__dict__,
+            stdout=f,
+        )
 
     parmed_init_parm = parmed.amber.AmberParm(str(PS._out_dir / PS.amber_pdb_init_top))
     parmed_init_parm.load_rst7(str(PS._out_dir / PS.amber_pdb_rewrite_init_min_rst))
@@ -308,6 +372,8 @@ def run_ld_step(
     run_pdb4amber(
         in_path=pred_abs_path,
         out_path=PS._out_dir / SP.step_amber_anm_pdb,
+        stdout_stderr_redirection_path=PS._out_dir
+        / SP.step_amber_pdb4amber_stdout_stderr,
         logger=ld_logger,
         app_settings=app_settings,
         reduce=False,
@@ -327,10 +393,13 @@ def run_ld_step(
     cmd_tleap = f'tleap -f "{amber_tleap_step_in_path}"'
     ld_logger.info("Running tleap")
     ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_tleap)
-    subprocess.run(
-        AS.ambertools_prefix + cmd_tleap,
-        **app_settings.subprocess_settings.__dict__,
-    )
+
+    with open(PS._out_dir / SP.step_amber_tleap_stdout, "w") as f:
+        subprocess.run(
+            AS.ambertools_prefix + cmd_tleap,
+            **app_settings.subprocess_settings.__dict__,
+            stdout=f,
+        )
 
     if (
         not (PS._out_dir / SP.step_amber_top).is_file()
@@ -343,78 +412,72 @@ def run_ld_step(
         ld_logger.error(emsg)
         raise tleapError().with_traceback(None) from None
 
-    cmd_min = dedent(f"""\
-                    $AMBERHOME/bin/{AS.pmemd_cmd} -O                    \\
-                        -i "{PS._out_dir / PS.amber_min_in}"         \\
-                        -p "{PS._out_dir / SP.step_amber_top}"       \\
-                        -c "{PS._out_dir / SP.step_amber_coord}"     \\
-                        -o "{PS._out_dir / SP.step_amber_min_out}"   \\
-                        -x "{PS._out_dir / SP.step_amber_min_coord}" \\
-                        -r "{PS._out_dir / SP.step_amber_min_rst}"   \\
-                        </dev/null""")
-    ld_logger.info("Running pmemd min")
-    ld_logger.debug("Running {cmd}", cmd=AS.pmemd_prefix + cmd_min)
-    subprocess.run(
-        AS.pmemd_prefix + cmd_min,
-        **app_settings.subprocess_settings.__dict__,
-    )
-    if not check_pmemd_out(PS._out_dir / SP.step_amber_min_out, ld_logger):
+    if not safe_pmemd(
+        overwrite=True,
+        mdin=PS._out_dir / PS.amber_min_in,
+        prmtop=PS._out_dir / SP.step_amber_top,
+        inpcrd=PS._out_dir / SP.step_amber_coord,
+        mdout=PS._out_dir / SP.step_amber_min_out,
+        mdcrd=PS._out_dir / SP.step_amber_min_coord,
+        restrt=PS._out_dir / SP.step_amber_min_rst,
+        stdout_path=PS._out_dir / SP.step_amber_pmemd_min_stdout,
+        ld_logger=ld_logger,
+        app_settings=app_settings,
+    ):
         emsg = "The pmemd minimization of the structure failed."
         ld_logger.error(emsg)
         raise LDError(emsg) from None
 
-    cmd_sim = dedent(f"""\
-                    $AMBERHOME/bin/{AS.pmemd_cmd} -O                        \\
-                        -i "{PS._out_dir / PS.amber_sim_in}"             \\
-                        -p "{PS._out_dir / SP.step_amber_top}"           \\
-                        -c "{PS._out_dir / SP.step_amber_min_rst}"       \\
-                        -o "{PS._out_dir / SP.step_amber_sim_out}"       \\
-                        -x "{PS._out_dir / SP.step_amber_sim_coord}"     \\
-                        -e "{PS._out_dir / SP.step_amber_sim_ener}"      \\
-                        -r "{PS._out_dir / SP.step_amber_sim_restart}"   \\
-                        </dev/null""")
-    ld_logger.info("Running pmemd sim")
-    ld_logger.debug("Running {cmd}", cmd=AS.pmemd_prefix + cmd_sim)
-    subprocess.run(
-        AS.pmemd_prefix + cmd_sim,
-        **app_settings.subprocess_settings.__dict__,
-    )
-    if not check_pmemd_out(PS._out_dir / SP.step_amber_sim_out, ld_logger):
-        emsg = "The pmemd simulation of the structure failed."
+    if not safe_pmemd(
+        overwrite=True,
+        mdin=PS._out_dir / PS.amber_sim_in,
+        prmtop=PS._out_dir / SP.step_amber_top,
+        inpcrd=PS._out_dir / SP.step_amber_min_rst,
+        mdout=PS._out_dir / SP.step_amber_sim_out,
+        mdcrd=PS._out_dir / SP.step_amber_sim_coord,
+        restrt=PS._out_dir / SP.step_amber_sim_restart,
+        stdout_path=PS._out_dir / SP.step_amber_pmemd_sim_stdout,
+        ld_logger=ld_logger,
+        app_settings=app_settings,
+        mden=PS._out_dir / SP.step_amber_sim_ener,
+    ):
+        emsg = "The pmemd LD simulation of the structure failed."
         ld_logger.error(emsg)
         raise LDError(emsg) from None
 
     with open(
-        PS._out_dir / SP.step_amber_ptraj_align_in, "w"
-    ) as step_amber_ptraj_align_in_file:
-        step_amber_ptraj_align_in_file.write(
+        PS._out_dir / SP.step_amber_cpptraj_align_in, "w"
+    ) as step_amber_cpptraj_align_in_file:
+        step_amber_cpptraj_align_in_file.write(
             dedent(f"""\
                     parm "{PS._out_dir / SP.step_amber_top}" [initial-top]
                     parm "{PS._out_dir / PS.amber_pdb_target_top}" [target-top]
                     trajin "{PS._out_dir / SP.step_amber_sim_restart}" parm [initial-top]
                     reference "{PS._out_dir / PS.amber_target_min_algn}" parm [target-top] [target-ref]
-                    rms ref [target-ref] :1-{resnum}@CA out {PS._out_dir / SP.step_amber_ptraj_rms_align_dat}
-                    trajout "{PS._out_dir / SP.step_amber_ptraj_algn_restart}" restart parm [initial-top]
+                    rms ref [target-ref] :1-{resnum}@CA out {PS._out_dir / SP.step_amber_cpptraj_rms_align_dat}
+                    trajout "{PS._out_dir / SP.step_amber_cpptraj_algn_restart}" restart parm [initial-top]
                        """)
         )
     ld_logger.trace(
         "Wrote file at {path}",
-        path=PS._out_dir / SP.step_amber_ptraj_align_in,
+        path=PS._out_dir / SP.step_amber_cpptraj_align_in,
     )
 
-    cmd_align = f'cpptraj "{PS._out_dir / SP.step_amber_top}" "{PS._out_dir / SP.step_amber_ptraj_align_in}"'
+    cmd_align = f'cpptraj "{PS._out_dir / SP.step_amber_top}" "{PS._out_dir / SP.step_amber_cpptraj_align_in}"'
     ld_logger.info("Running cpptraj")
     ld_logger.debug("Running {cmd}", cmd=AS.ambertools_prefix + cmd_align)
-    subprocess.run(
-        AS.ambertools_prefix + cmd_align,
-        **app_settings.subprocess_settings.__dict__,
-    )
+    with open(PS._out_dir / SP.step_amber_cpptraj_align_stdout, "w") as f:
+        subprocess.run(
+            AS.ambertools_prefix + cmd_align,
+            **app_settings.subprocess_settings.__dict__,
+            stdout=f,
+        )
 
     parmed_parm = parmed.amber.AmberParm(str(PS._out_dir / SP.step_amber_top))
     parmed.tools.actions.addPDB(
         parmed_parm, PS._out_dir / PS.filtered_init_structure
     ).execute()
-    parmed_parm.load_rst7(str(PS._out_dir / SP.step_amber_ptraj_algn_restart))
+    parmed_parm.load_rst7(str(PS._out_dir / SP.step_amber_cpptraj_algn_restart))
     parmed_parm.save(
         str(PS._out_dir / SP.step_anmld_pdb),
         renumber=False,
