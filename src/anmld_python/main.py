@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 from tqdm.notebook import tqdm_notebook
 import biotite.structure as b_structure
 import matplotlib.pyplot as plt
-import numpy as np
+import pandas as pd
 import seaborn as sns
 import typer
 
