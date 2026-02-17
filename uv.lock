@@ -66,7 +66,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "biotite", specifier = ">=1.4.0" },
+    { name = "biotite", specifier = ">=1.5.0" },
     { name = "fastpdb", specifier = ">=1.3.3" },
     { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.140.2" },
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.30.1" },
@@ -147,7 +147,7 @@ wheels = [
 
 [[package]]
 name = "biotite"
-version = "1.4.0"
+version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "biotraj", marker = "sys_platform == 'linux'" },
@@ -158,10 +158,14 @@ dependencies = [
     { name = "packaging", marker = "sys_platform == 'linux'" },
     { name = "requests", marker = "sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ff/64/3526f99fe09add35decea977bd3049672fc0be689d7e0557b0564a55600e/biotite-1.4.0.tar.gz", hash = "sha256:0428427fff47e046a36ecdda1cbb38fc61e652e8df4339bf0a0b7a248a051a8b", size = 37035933, upload-time = "2025-07-07T12:08:53.956Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/59/7b/99153f7bceef01034b5f19a6b123219533132d446ffcf141dfef3e386d33/biotite-1.6.0.tar.gz", hash = "sha256:4c172f6e57521220fa0fc4899142211f6f21ba83d8f6f135d4edc68981f70e7e", size = 38514388, upload-time = "2026-01-23T12:47:38.331Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/e4/eb18efca3bf159164144238ebfde8c064cfb122194183507b5dfcd690969/biotite-1.4.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d17dbcabf8dfce25fff50f2c31e03392f8bd66dce064379e5f4c03d28ad66fc6", size = 56284190, upload-time = "2025-07-07T12:08:34.406Z" },
-    { url = "https://files.pythonhosted.org/packages/ca/2e/aea1d77a3197d8f7caac0ffb19a6abdb3138ba69d90c8f74ef5a996d13a8/biotite-1.4.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:96644d9bcf8b14f3ce7758c855f3773ddd5d95c06cba178847911d871b81b7d2", size = 56171242, upload-time = "2025-07-07T12:08:47.089Z" },
+    { url = "https://files.pythonhosted.org/packages/65/2e/2b527586d6dac0ca0cea78fc9c12d29972789b69f3c0554a1c21f567f3c6/biotite-1.6.0-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:cdc0ba7c7ba1473419cf5836398ab65f2b048d6e6f9e480ea6c361c08f511d30", size = 56620776, upload-time = "2026-01-23T12:46:58.34Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/39/2d6a10a341b4457f4500823e0193b92bced378356521cc53ed2832f1e04b/biotite-1.6.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:272da247b63588a1a075f1dfb2d05a3b5ae88e9cfcd0ca9625d9bd3946914c72", size = 57196435, upload-time = "2026-01-23T12:47:01.585Z" },
+    { url = "https://files.pythonhosted.org/packages/db/c6/b72f7ce4438401d9d7c6b2c46ef26e7cf1187f0ff9faf15b8444cacdc0da/biotite-1.6.0-cp313-cp313-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4026e034e90696780598f46fccd9e020a562983620f77c4e6f51b0805f929f38", size = 56584437, upload-time = "2026-01-23T12:47:14.53Z" },
+    { url = "https://files.pythonhosted.org/packages/25/44/c8cfb570d8a131e136e3f06b9c47d4dea0b6f1ce0b34d1ce1092331e7505/biotite-1.6.0-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5087a40853a451abf4aedae1293bb413ef1aa4dd8287fc2b363b4a5c70c3ae55", size = 57184611, upload-time = "2026-01-23T12:47:17.642Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/65/b5358c885a9c04c3988678cb352e53edfb5cf234f8c653159d0830a58a42/biotite-1.6.0-cp314-cp314-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:24cd941932987569be48b85219d7a97bacad865532a3e5b31998cc5f192f9fd7", size = 56511519, upload-time = "2026-01-23T12:47:29.721Z" },
+    { url = "https://files.pythonhosted.org/packages/62/b7/fb3b2fa155a3a5cf00f8e970e82a7554070c59a127b326375aa36d5452db/biotite-1.6.0-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:ef558c9bb1715753acf5819593fd9f3f80bc2feaa02a7d9f0d7d8d15a284d182", size = 56926154, upload-time = "2026-01-23T12:47:32.824Z" },
 ]
 
 [[package]]

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections import Counter
 from pathlib import Path
 from typing import Optional, cast
 
@@ -6,15 +7,18 @@ from biotite.structure.atoms import AtomArray, AtomArrayStack
 from biotite.structure.io import save_structure
 from loguru import logger
 import biotite.structure as b_structure
-import biotite.structure.io.pdbx as b_pdbx
+import biotite.sequence as b_sequence
 import biotite.structure.io.pdb as b_pdb
+import biotite.structure.io.pdbx as b_pdbx
 import fastpdb
 import loguru
+import networkx as nx
 import numpy as np
 import openmm.app as mm_app
 import pdbfixer
+import scipy.spatial as spatial
 
-from anmld_python.settings import AppSettings
+from anmld_python.settings import AppSettings, CropSettings
 
 
 class LDError(Exception):
@@ -232,7 +236,9 @@ def calc_aa_ca_rmsd(
 
 
 def safe_superimpose(
-    aa_fixed: AtomArray, aa_mobile: AtomArray, app_settings: AppSettings
+    aa_fixed: AtomArray,
+    aa_mobile: AtomArray,
+    app_settings: AppSettings,
 ) -> AtomArray:
     if app_settings._different_topologies:
         aa_aligned, _, _, _ = b_structure.superimpose_homologs(
@@ -245,3 +251,227 @@ def safe_superimpose(
             mobile=aa_mobile,
         )
     return aa_aligned
+
+
+def check_backbone_continuity(aa: AtomArray, crop_settings: CropSettings):
+    mask = np.zeros_like(aa, dtype=bool)
+
+    is_continous = True
+    for chain_id in b_structure.get_chains(aa):
+        chain: b_structure.AtomArray = aa[aa.chain_id == chain_id]
+
+        bb = chain[b_structure.filter_peptide_backbone(chain)]
+
+        # needed to make sure tuples are not converted to a new dim
+        bb_unique_res_ids = np.empty_like(bb, dtype="O")
+        bb_unique_res_ids[:] = list(zip(bb.res_id, bb.ins_code))
+
+        bb_bondlist = b_structure.connect_via_distances(bb)
+        res_bondlist = bb_unique_res_ids[bb_bondlist.as_array()[:, :2]]
+
+        G = nx.Graph()
+        G.add_edges_from(res_bondlist)
+
+        selected_res = set()
+        for connected_comp in nx.connected_components(G):
+            if len(connected_comp) < crop_settings.res_number_cutoff:
+                is_continous = False
+                continue
+            selected_res.update(connected_comp)
+
+        chain_unique_res_ids = list(zip(chain.res_id, chain.ins_code))
+        mask[aa.chain_id == chain_id] = [
+            x in selected_res for x in chain_unique_res_ids
+        ]
+
+    return is_continous, mask
+
+
+def check_spatial_continuity(
+    aa: AtomArray, crop_settings: CropSettings
+) -> tuple[bool, AtomArray]:
+    aa_atom_to_resid = b_structure.get_all_residue_positions(aa)
+    ca_aa = aa[(aa.element == "C") & (aa.atom_name == "CA")]
+
+    if b_structure.get_residue_count(aa) != b_structure.get_residue_count(ca_aa):
+        raise ValueError("Structure has residues with missing carbon alpha atoms")
+
+    ca_graph = nx.Graph(
+        spatial.distance.squareform(
+            spatial.distance.pdist(ca_aa.coord, metric="sqeuclidean")
+        )  # type: ignore
+        < crop_settings.connectedness_cutoff**2
+    )
+    con_comp = list(nx.connected_components(ca_graph))
+
+    if len(con_comp) > 1:
+        largest_con_comp = list(max(con_comp, key=len))
+        largest_con_comp_atoms = np.isin(aa_atom_to_resid, largest_con_comp)
+        return False, largest_con_comp_atoms
+    return True, np.ones_like(aa, dtype=bool)
+
+
+def crop_atomarrays(aa_A: AtomArray, aa_B: AtomArray, crop_settings: CropSettings):
+    aa_A = aa_A[b_structure.filter_amino_acids(aa_A)]  # type:ignore
+    aa_B = aa_B[b_structure.filter_amino_acids(aa_B)]  # type:ignore
+
+    seqs_A = b_structure.to_sequence(aa_A)[0]
+    seqs_B = b_structure.to_sequence(aa_B)[0]
+
+    chains_A = b_structure.get_chains(aa_A)
+    chains_B = b_structure.get_chains(aa_B)
+
+    seq_sim_graph = nx.Graph()
+
+    [seq_sim_graph.add_node(("A", cid)) for cid in range(len(seqs_A))]
+    [seq_sim_graph.add_node(("B", cid)) for cid in range(len(seqs_B))]
+
+    for cid_A, c_seq_A in enumerate(seqs_A):
+        for cid_B, c_seq_B in enumerate(seqs_B):
+            alignments = b_sequence.align.align_optimal(  # type: ignore
+                b_sequence.ProteinSequence(c_seq_A),
+                b_sequence.ProteinSequence(c_seq_B),
+                b_sequence.align.SubstitutionMatrix.std_protein_matrix(),  # type: ignore
+            )
+
+            seq_id = None
+            selected_al = None
+            seq_ids = []
+            for al in alignments:
+                seq_id = b_sequence.align.get_pairwise_sequence_identity(al)[0, 1]  # type: ignore
+                seq_ids.append(seq_id)
+                if seq_id > crop_settings.seq_id_cutoff:
+                    selected_al = al
+                    break
+            if selected_al is not None:
+                assert seq_id is not None
+
+                seq_sim_graph.add_edge(
+                    ("A", cid_A),
+                    ("B", cid_B),
+                    alignment=selected_al,
+                    seq_id=seq_id,
+                )
+
+    degrees = nx.degree(seq_sim_graph)
+
+    if max(degrees, key=lambda x: x[1])[1] > 1:
+        seq_matched_chains_A = set()
+        seq_matched_chains_B = set()
+
+        for edge in seq_sim_graph.edges():
+            edge_cid_A = [v for v in edge if v[0] == "A"][0][1]
+            edge_cid_B = [v for v in edge if v[0] == "B"][0][1]
+
+            seq_matched_chains_A.add(chains_A[edge_cid_A])
+            seq_matched_chains_B.add(chains_B[edge_cid_B])
+
+        if len(seq_matched_chains_A) != len(seq_matched_chains_B):
+            raise ValueError("Number of sequence matched chains must be equal")
+
+        seq_matched_aa_A = aa_A[np.isin(aa_A.chain_id, list(seq_matched_chains_A))]
+        seq_matched_aa_B = aa_B[np.isin(aa_B.chain_id, list(seq_matched_chains_B))]
+
+        seq_matched_aa_B, _, anchor_idx_A, anchor_idx_B = (
+            b_structure.superimpose_homologs(
+                fixed=seq_matched_aa_A, mobile=seq_matched_aa_B
+            )
+        )
+
+        anchors_chains_A = seq_matched_aa_A[anchor_idx_A].chain_id
+        anchors_chains_B = seq_matched_aa_B[anchor_idx_B].chain_id
+
+        anchor_counter = Counter(zip(anchors_chains_A, anchors_chains_B))
+
+        edges = list(seq_sim_graph.edges())
+        for edge in edges:
+            edge_cid_A = [v for v in edge if v[0] == "A"][0][1]
+            edge_cid_B = [v for v in edge if v[0] == "B"][0][1]
+
+            edge_A = chains_A[edge_cid_A]
+            edge_B = chains_B[edge_cid_B]
+
+            matches_of_edge_A = {c_B: anchor_counter[(edge_A, c_B)] for c_B in chains_B}
+            matches_of_edge_B = {c_A: anchor_counter[(c_A, edge_B)] for c_A in chains_A}
+
+            best_match_of_edge_A = max(matches_of_edge_A, key=matches_of_edge_A.get)
+            best_match_of_edge_B = max(matches_of_edge_B, key=matches_of_edge_B.get)
+
+            if not (best_match_of_edge_A == edge_B and best_match_of_edge_B == edge_A):
+                seq_sim_graph.remove_edge(*edge)
+
+    selected_atoms_A = []
+    selected_atoms_B = []
+    for edge in seq_sim_graph.edges():
+        edge_cid_A = [v for v in edge if v[0] == "A"][0][1]
+        edge_cid_B = [v for v in edge if v[0] == "B"][0][1]
+
+        edge_aa_A = aa_A[aa_A.chain_id == chains_A[edge_cid_A]]
+        edge_aa_B = aa_B[aa_B.chain_id == chains_B[edge_cid_B]]
+
+        alignment = nx.get_edge_attributes(seq_sim_graph, "alignment")[edge]
+        non_gapped_mask = ~np.any(alignment.trace == -1, axis=1)
+
+        aligned_res_idx_A = alignment.trace[non_gapped_mask, 0]
+        aligned_res_idx_B = alignment.trace[non_gapped_mask, 1]
+
+        edge_aa_atom_to_resid_A = b_structure.get_all_residue_positions(edge_aa_A)
+        edge_aa_atom_to_resid_B = b_structure.get_all_residue_positions(edge_aa_B)
+
+        edge_aligned_atoms_A = np.isin(edge_aa_atom_to_resid_A, aligned_res_idx_A)
+        edge_aligned_atoms_B = np.isin(edge_aa_atom_to_resid_B, aligned_res_idx_B)
+
+        selected_atoms_A.extend(edge_aa_A[edge_aligned_atoms_A])
+        selected_atoms_B.extend(edge_aa_B[edge_aligned_atoms_B])
+
+    sel_aa_A = b_structure.array(selected_atoms_A)
+    sel_aa_B = b_structure.array(selected_atoms_B)
+
+    is_bb_continous_A, bb_continuity_mask_A = check_backbone_continuity(
+        aa=sel_aa_A, crop_settings=crop_settings
+    )
+    is_bb_continous_B, bb_continuity_mask_B = check_backbone_continuity(
+        aa=sel_aa_B, crop_settings=crop_settings
+    )
+
+    if not is_bb_continous_A or not is_bb_continous_B:
+        return crop_atomarrays(
+            aa_A=sel_aa_A[bb_continuity_mask_A],
+            aa_B=sel_aa_B[bb_continuity_mask_B],
+            crop_settings=crop_settings,
+        )
+
+    # Check for spatially discontinued components
+    is_spatially_connected_A, largest_cont_comp_mask_A = check_spatial_continuity(
+        aa=sel_aa_A, crop_settings=crop_settings
+    )
+    is_spatially_connected_B, largest_cont_mask_B = check_spatial_continuity(
+        aa=sel_aa_B, crop_settings=crop_settings
+    )
+
+    if not is_spatially_connected_A or not is_spatially_connected_B:
+        return crop_atomarrays(
+            aa_A=sel_aa_A[largest_cont_comp_mask_A],
+            aa_B=sel_aa_B[largest_cont_mask_B],
+            crop_settings=crop_settings,
+        )
+
+    return sel_aa_A, sel_aa_B
+
+
+def crop_structures(
+    init_path: Path,
+    target_path: Path,
+    cropped_init_path: Path,
+    cropped_target_path: Path,
+    crop_settings: CropSettings,
+):
+    init_aa =   get_atomarray(init_path)
+    target_aa = get_atomarray(target_path)
+
+    cropped_init_aa, cropped_target_aa = crop_atomarrays(
+        aa_A=init_aa, aa_B=target_aa, crop_settings=crop_settings
+    )
+
+    save_structure(file_path=cropped_init_path, array=cropped_init_aa)
+    save_structure(file_path=cropped_target_path, array=cropped_target_aa)

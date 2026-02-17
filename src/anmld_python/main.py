@@ -20,6 +20,7 @@ from anmld_python.settings import AppSettings
 from anmld_python.tools import (
     LDError,
     NonConnectedStructureError,
+    crop_structures,
     get_atomarray,
     sanitize_structure,
 )
@@ -100,7 +101,25 @@ def process_inputs(
             )
             MS.platform_obj = None
 
-    logger.info("Sanitizing the initial and target structures")
+    if app_settings.crop_settings.enable:
+        logger.info("Cropping the initial and target structures.")
+        logger.warning(
+            "Note: Automated cropping is an experimental feature and might"
+            " produce unexpected artifacts. Manual examination of cropped"
+            " structures is recommended."
+        )
+
+        crop_structures(
+            init_path=path_abs_structure_init.absolute(),
+            target_path=path_abs_structure_target.absolute(),
+            cropped_init_path=PS._out_dir / PS.cropped_init_structure,
+            cropped_target_path=PS._out_dir / PS.cropped_target_structure,
+            crop_settings=app_settings.crop_settings
+        )
+        path_abs_structure_init = PS._out_dir / PS.cropped_init_structure
+        path_abs_structure_target = PS._out_dir / PS.cropped_target_structure
+
+    logger.info("Sanitizing the initial and target structures.")
     aa_step = sanitize_structure(
         in_path=path_abs_structure_init.absolute(),
         filtered_path=PS._out_dir / PS.filtered_init_structure,
@@ -447,7 +466,9 @@ def cleanup(app_settings: AppSettings):
                 missing_ok=True
             )
 
-            Path(PS._out_dir / SP.step_amber_pdb4amber_stdout_stderr).unlink(missing_ok=True)
+            Path(PS._out_dir / SP.step_amber_pdb4amber_stdout_stderr).unlink(
+                missing_ok=True
+            )
             Path(PS._out_dir / SP.step_amber_tleap_stdout).unlink(missing_ok=True)
             Path(PS._out_dir / SP.step_amber_pmemd_min_stdout).unlink(missing_ok=True)
             Path(PS._out_dir / SP.step_amber_pmemd_sim_stdout).unlink(missing_ok=True)

@@ -75,6 +75,9 @@ class PathSettings(BaseSettings):
     init_structure: str     = "init.pdb"
     target_structure: str   = "target.pdb"
 
+    cropped_init_structure: str    = "cropped_init.pdb"
+    cropped_target_structure: str  = "cropped_target.pdb"
+
     filtered_init_structure: str    = "filtered_init.pdb"
     filtered_target_structure: str  = "filtered_target.pdb"
 
@@ -192,7 +195,7 @@ class ANMLDSettings(BaseSettings):
     early_stopping_ca_rmsd: float = Field(0)
     continue_until_rmsd_cutoff: bool = Field(False)
 
-    rcut_ANM: PositiveFloat = Field(8)
+    rcut_ANM: PositiveFloat = Field(13.0)
     gamma_ANM: float = Field(1.0)
     DF: PositiveFloat = Field(0.6)
     _step_DF: float | None = PrivateAttr()
@@ -200,7 +203,11 @@ class ANMLDSettings(BaseSettings):
     max_mode: PositiveInt = Field(30)
 
 
-
+class CropSettings(BaseSettings):
+    enable: bool = False
+    seq_id_cutoff: PositiveFloat = Field(0.75)
+    res_number_cutoff: PositiveInt = Field(30)
+    connectedness_cutoff: PositiveFloat = Field(7)
 
 class AppSettings(BaseSettings):
     logging_level: Literal[
@@ -219,10 +226,11 @@ class AppSettings(BaseSettings):
     _different_topologies: bool = PrivateAttr(False)
     sanitization_max_retry: PositiveInt = 10
 
-    anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")   # type: ignore
-    amber_settings: AmberSettings = Field(AmberSettings(), alias="AMBER")   # type: ignore
+    anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")       # type: ignore
+    amber_settings: AmberSettings = Field(AmberSettings(), alias="AMBER")       # type: ignore
     openmm_settings: OpenMMSettings = Field(OpenMMSettings(), alias="OpenMM")   # type: ignore
 
     path_settings: PathSettings = Field(PathSettings(), alias="PATHS")      # type: ignore
+    crop_settings: CropSettings = Field(CropSettings(), alias="CROP")       # type: ignore
     subprocess_settings: SubprocessSettings = Field(SubprocessSettings(), alias="SUBPROCESS") # type:ignore
 
