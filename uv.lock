@@ -54,7 +54,7 @@ hip6 = [
 notebook = [
     { name = "jax", extra = ["cuda12"], marker = "sys_platform == 'linux'" },
     { name = "mdtraj", marker = "sys_platform == 'linux'" },
-    { name = "py3dmol", marker = "sys_platform == 'linux'" },
+    { name = "py2dmol", marker = "sys_platform == 'linux'" },
     { name = "seaborn", marker = "sys_platform == 'linux'" },
     { name = "toml", marker = "sys_platform == 'linux'" },
 ]
@@ -86,7 +86,7 @@ requires-dist = [
     { name = "parmed", marker = "extra == 'amber'", git = "https://github.com/ParmEd/ParmEd?rev=4.3.1" },
     { name = "pdbfixer", git = "https://github.com/openmm/pdbfixer?rev=v1.11" },
     { name = "prody", marker = "extra == 'dev'", specifier = ">=2.6.1" },
-    { name = "py3dmol", marker = "extra == 'notebook'", specifier = ">=2.5.2" },
+    { name = "py2dmol", marker = "extra == 'notebook'", specifier = ">=1.6.3" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pydantic-settings", specifier = ">=2.10.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.1" },
@@ -397,6 +397,30 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/16/6f/3d2ae69d96c4cdee6dfe7598ca5519a1514487700ca3d7c49c5a1ad65308/fonttools-4.59.1-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:42052b56d176f8b315fbc09259439c013c0cb2109df72447148aeda677599612", size = 4942926, upload-time = "2025-08-14T16:27:46.523Z" },
     { url = "https://files.pythonhosted.org/packages/0c/d3/c17379e0048d03ce26b38e4ab0e9a98280395b00529e093fe2d663ac0658/fonttools-4.59.1-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:bcd52eaa5c4c593ae9f447c1d13e7e4a00ca21d755645efa660b6999425b3c88", size = 4958678, upload-time = "2025-08-14T16:27:48.555Z" },
     { url = "https://files.pythonhosted.org/packages/0f/64/9d606e66d498917cd7a2ff24f558010d42d6fd4576d9dd57f0bd98333f5a/fonttools-4.59.1-py3-none-any.whl", hash = "sha256:647db657073672a8330608970a984d51573557f328030566521bc03415535042", size = 1130094, upload-time = "2025-08-14T16:28:12.048Z" },
+]
+
+[[package]]
+name = "gemmi"
+version = "0.7.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/25/2b/012dd71ce7f080370e6c1eb9331a67bddeacf5a41ea3164ad3b3358df2ee/gemmi-0.7.4.tar.gz", hash = "sha256:f9e49b76594e9ffebfba27320dab1909f5de9b1ece8ea3efa4079e367887e627", size = 1421324, upload-time = "2025-11-23T12:41:45.18Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/ca/953442be455362b5b0884a72e6b3180f9faf5ccd49dc19d3cd9fdb1c0b32/gemmi-0.7.4-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:966e59005acfae838516f4ca7719c41027316d89ffc2723680d977f8000d37eb", size = 2283212, upload-time = "2025-11-23T12:57:21.023Z" },
+    { url = "https://files.pythonhosted.org/packages/17/23/60d1f411e2b5ee0a49b14f89261a8d1e594cfffa2863af00167dddab4ccf/gemmi-0.7.4-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:535e25513e5674b9f11553e34bb3def8a223571bc2373c1854078e53f43b0a1a", size = 2610436, upload-time = "2025-11-23T12:57:22.718Z" },
+    { url = "https://files.pythonhosted.org/packages/22/f7/71cd0bfaeb6afb1ccfe476e857c4391438a3f8696a4b6f7358edc246680c/gemmi-0.7.4-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:a1f119a0eac67b111a124ee8f2eaee019682743e09b0fadba48a84dca89a9f9c", size = 2790654, upload-time = "2025-11-23T12:57:24.391Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/69/8ea0d338f830a2934ee5c49139cf95fd5301c516471ab28821cbf055c9c8/gemmi-0.7.4-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:31116699979b6d58334b48850d361f27f97f998c7b87c80f4736042f919be410", size = 3116912, upload-time = "2025-11-23T12:57:25.977Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/13/20b2f5de7c25d3875068f22c4f3664c04cc67fd789cfd51ebc3bac23dc9f/gemmi-0.7.4-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:c0025666a1091dd1c98e7707105c0e9e7ad96992df4394574e008634330275cf", size = 2283067, upload-time = "2025-11-23T12:57:34.593Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/34/a6536afaeee07fa351e2087bf7b5b1522aa703bc1f6e29d53c27a722ac33/gemmi-0.7.4-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:aaa1b1a613649db9f9d6c67df6662c8357c3459112842dd7a77203552b795a02", size = 2610360, upload-time = "2025-11-23T12:57:36.688Z" },
+    { url = "https://files.pythonhosted.org/packages/23/4b/709afdd62c07c8850671af9d4b0268ecd3aac172f41daa82ef857e6aba40/gemmi-0.7.4-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:e7e796c42f6a060ccd415e88e325f7e783f1ca4a73d11c70999b8c530274b68c", size = 2790917, upload-time = "2025-11-23T12:57:39.506Z" },
+    { url = "https://files.pythonhosted.org/packages/5a/4e/5b3ad6d98fa6469afb62b76146640f302a9ffa94d981f511ba6f71205f86/gemmi-0.7.4-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:f0190f5a709e062fa1bfe9363230865338d8943c6320d81293f0c7342c89e9f8", size = 3117009, upload-time = "2025-11-23T12:57:42.163Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/fd/1a62dddcf25bcdc05fb974edd804c2fa16b9461d67ad0d784187bcb69fbc/gemmi-0.7.4-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:3b1e3b2dfcb2704d8a9455387790c0dd09936fe99125de8ffe0c36f28d6247e2", size = 2286633, upload-time = "2025-11-23T12:57:51.966Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/01/941c089f9ec2cfa34c1b9ff6922734f746ff9ea507eff54b755c3386eefe/gemmi-0.7.4-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:4a53d4aff3ae9eb5d55a848d5d22eec2cabc3c29a9310204c323bd1d46cdb4d7", size = 2611356, upload-time = "2025-11-23T12:57:53.831Z" },
+    { url = "https://files.pythonhosted.org/packages/11/03/cae6ae2c03d77f529878a50898e607df7fe75980f047985697b62bf2f981/gemmi-0.7.4-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:ce974cdcbec912a5a42d9c2968d09872628b278e04fe435a712df7becaf5847e", size = 2794591, upload-time = "2025-11-23T12:57:55.545Z" },
+    { url = "https://files.pythonhosted.org/packages/97/b1/97fb7043ba0dfd1fb679ca2f3695b798eee17118a24eeb47b5bcd2b0df9c/gemmi-0.7.4-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:3e41cd4f80681477e778b5aa79f380002954cf406c9ba7d798b8e7fb854d3a5f", size = 3118308, upload-time = "2025-11-23T12:57:58.766Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/8a/074e13b2120cd286746596c00ea8ec2174196c27e0050ba186faaa6c14c7/gemmi-0.7.4-cp314-cp314t-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:fc0539f18fe8a9a697599dc73398cd639dd084141e6a79a4850bd6f4a7e0bb92", size = 2325656, upload-time = "2025-11-23T12:58:04.643Z" },
+    { url = "https://files.pythonhosted.org/packages/8c/eb/ede752ac791f730499a2249a0dbb695031aa613ba22dbd92afb7f25cb3e1/gemmi-0.7.4-cp314-cp314t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5373dfc7a1ec49c8eeea028d026139a96b65b1f624cb8a42dbae0a3c8c8dd8b2", size = 2633069, upload-time = "2025-11-23T12:58:06.706Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/f9/08ba3e723ccbeaaec24d546c810a13fea69a2bb0fd429eb4aa509967dd74/gemmi-0.7.4-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:a4dfa9d1a084945b67a528549339f6c1c08cec5bd9e862ea18b2d75a6bd0f43f", size = 2829322, upload-time = "2025-11-23T12:58:08.867Z" },
+    { url = "https://files.pythonhosted.org/packages/22/0f/a4385ecb6eea9d70f8607e9e4e2030b91bc83b721952eda5ddfe091a5340/gemmi-0.7.4-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:f482bc246b4e5d3e8023dee86b2817d8384db4c0c4e6b9d265888681ddbd0f83", size = 3137240, upload-time = "2025-11-23T12:58:11.036Z" },
 ]
 
 [[package]]
@@ -1221,12 +1245,18 @@ wheels = [
 ]
 
 [[package]]
-name = "py3dmol"
-version = "2.5.2"
+name = "py2dmol"
+version = "1.6.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/33/e9/fa4fce24843554d4e025fcdb2fcebfd0ec14db88a4a57545eb38b15825be/py3dmol-2.5.2.tar.gz", hash = "sha256:9ef1c72c786b22e33541e05b27e97bb99ea1d3c962819ed55c2203d10a515198", size = 7857, upload-time = "2025-07-31T19:35:41.833Z" }
+dependencies = [
+    { name = "gemmi", marker = "sys_platform == 'linux'" },
+    { name = "ipython", marker = "sys_platform == 'linux'" },
+    { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' and sys_platform == 'linux'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'linux'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/28/6c/52866960e45d2e7dfe4dfaeb23ce39e96def5c86c568455d68c76afff94b/py2dmol-1.6.3.tar.gz", hash = "sha256:a2f48f1fe23aaafd4514d91a11507cd280b81b945b43cf5b1b864d880dc1cb4c", size = 68489, upload-time = "2025-12-15T06:48:30.803Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a3/17/c476487ba903c7d793db633b4e8ca4a420ae272890302189d9402ba8ff85/py3dmol-2.5.2-py2.py3-none-any.whl", hash = "sha256:b921940ff046cf7ca008a249cbd5debec561dcf337f1e5f3df7ac5d4a1954e8e", size = 7154, upload-time = "2025-07-31T19:35:41.022Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/35/56be91305407014a119d0f03dc0100512eb683e0a627efd7a974066443f9/py2dmol-1.6.3-py3-none-any.whl", hash = "sha256:c4db002599ebdb7fb64576bc6a9ef06d83f9137acc6cc6ebbbf2da95c7241f40", size = 67975, upload-time = "2025-12-15T06:48:29.627Z" },
 ]
 
 [[package]]

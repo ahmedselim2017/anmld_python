@@ -8,10 +8,10 @@ import shutil
 import tomllib
 
 from tqdm.auto import tqdm
+from tqdm.notebook import tqdm_notebook
 import biotite.structure as b_structure
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import seaborn as sns
 import typer
 
@@ -310,6 +310,8 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                 " all-atom RMSD  which is below the given threshold"
                 f" {app_settings.anmld_settings.early_stopping_aa_rmsd}"
             )
+            if isinstance(pbar, tqdm_notebook):
+                pbar.container.children[1].bar_style = "success"
             break
         elif (
             step_info["ca_rmsd_target"]
@@ -320,6 +322,8 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                 " C-alpha RMSD  which is below the given threshold"
                 f" {app_settings.anmld_settings.early_stopping_ca_rmsd}"
             )
+            if isinstance(pbar, tqdm_notebook):
+                pbar.container.children[1].bar_style = "success"
             break
 
         step_info["df"] = app_settings.anmld_settings._step_DF

@@ -55,7 +55,7 @@ dev = [
 notebook = [
     "jax[cuda12]>=0.7.1; sys_platform != 'darwin'",
     "mdtraj>=1.11.0",
-    "py3dmol>=2.5.2",
+    "py2dmol>=1.6.3",
     "seaborn>=0.13.2",
     "toml>=0.10.2",
 ]
