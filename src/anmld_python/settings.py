@@ -203,7 +203,7 @@ class ANMLDSettings(BaseSettings):
     max_mode: PositiveInt = Field(30)
 
 
-class CropSettings(BaseSettings):
+class CropSettings(BaseModel):
     enable: bool = False
     seq_id_cutoff: PositiveFloat = Field(0.75)
     res_number_cutoff: PositiveInt = Field(30)
