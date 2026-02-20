@@ -220,6 +220,7 @@ class AppSettings(BaseSettings):
     ] = "INFO"
     mode_selection: Literal["ORIGINAL"] = "ORIGINAL"
     LD_method: Literal["AMBER", "OpenMM"] = "OpenMM"
+    ANM_backend: Literal[None, "JAX", "NumPy"] = None
 
     cleanup: bool = Field(False, alias="clean_temporary_files")
 

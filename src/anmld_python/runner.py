@@ -4,14 +4,12 @@ from typing import Any, Optional
 from biotite.structure import AtomArray
 import biotite.structure as b_structure
 from biotite.structure.io import save_structure
-import fastpdb
 import loguru
 import numpy as np
 
 from anmld_python.settings import AppSettings, StepPathSettings
 from anmld_python.tools import LDError, NonConnectedStructureError, get_CAs
 
-import anmld_python.anm as ANM
 
 
 def run_step(
@@ -26,6 +24,13 @@ def run_step(
 ) -> dict:
     PS = app_settings.path_settings
 
+    if app_settings.ANM_backend is None:
+        import anmld_python.anm as ANM
+    elif app_settings.ANM_backend == "JAX":
+        import anmld_python.anm.jax_impl as ANM
+    else:
+        import anmld_python.anm.numpy_impl as ANM
+
     ca_step = get_CAs(aa_step)
 
     hessian_step = ANM.build_hessian(
@@ -34,10 +39,12 @@ def run_step(
         gamma=app_settings.anmld_settings.gamma_ANM,
     )
     step_logger.debug("Calculated the Hessian matrix")
+
     W, V = ANM.calc_modes(
         hessian=hessian_step,
         mode_max=app_settings.anmld_settings.max_mode,
     )
+
     step_logger.debug("Calculated ANM modes")
 
     if np.any(np.isclose(W, 0)):
