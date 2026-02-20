@@ -323,8 +323,8 @@ def crop_atomarrays(aa_A: AtomArray, aa_B: AtomArray, crop_settings: CropSetting
 
     seq_sim_graph = nx.Graph()
 
-    [seq_sim_graph.add_node(("A", cid)) for cid in range(len(seqs_A))]
-    [seq_sim_graph.add_node(("B", cid)) for cid in range(len(seqs_B))]
+    [seq_sim_graph.add_node(("A", cid, chains_A[cid])) for cid in range(len(seqs_A))]
+    [seq_sim_graph.add_node(("B", cid, chains_B[cid])) for cid in range(len(seqs_B))]
 
     for cid_A, c_seq_A in enumerate(seqs_A):
         for cid_B, c_seq_B in enumerate(seqs_B):
@@ -347,8 +347,8 @@ def crop_atomarrays(aa_A: AtomArray, aa_B: AtomArray, crop_settings: CropSetting
                 assert seq_id is not None
 
                 seq_sim_graph.add_edge(
-                    ("A", cid_A),
-                    ("B", cid_B),
+                    ("A", cid_A, chains_A[cid_A]),
+                    ("B", cid_B, chains_B[cid_B]),
                     alignment=selected_al,
                     seq_id=seq_id,
                 )
@@ -372,9 +372,13 @@ def crop_atomarrays(aa_A: AtomArray, aa_B: AtomArray, crop_settings: CropSetting
         seq_matched_aa_A = aa_A[np.isin(aa_A.chain_id, list(seq_matched_chains_A))]
         seq_matched_aa_B = aa_B[np.isin(aa_B.chain_id, list(seq_matched_chains_B))]
 
+        min_res_count = min(b_structure.get_residue_count(seq_matched_aa_A), b_structure.get_residue_count(seq_matched_aa_B))
+
         seq_matched_aa_B, _, anchor_idx_A, anchor_idx_B = (
             b_structure.superimpose_homologs(
-                fixed=seq_matched_aa_A, mobile=seq_matched_aa_B
+                fixed=seq_matched_aa_A,
+                mobile=seq_matched_aa_B,
+                min_anchors=min_res_count
             )
         )
 
@@ -466,7 +470,7 @@ def crop_structures(
     cropped_target_path: Path,
     crop_settings: CropSettings,
 ):
-    init_aa =   get_atomarray(init_path)
+    init_aa = get_atomarray(init_path)
     target_aa = get_atomarray(target_path)
 
     cropped_init_aa, cropped_target_aa = crop_atomarrays(
