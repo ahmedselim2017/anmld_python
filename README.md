@@ -45,17 +45,17 @@ command will be run before each of the AmberTools and PMEMD calls.
 
 ## Configuration
 
-Configuration of `anmld-python` can be performed with a `toml` file.
+Configuration of `anmld-python` can be performed with a `json` file.
 Unspecified settings will use their default values. The default configuration
 file that includes all of the settings that can be changed can be found at
-`settings.toml`. 
+`settings.json`. 
 
 ## Running
 
 You can run ANM-LD with:
 
 ```sh
-anmld-python settings.toml initial.pdb target.pdb
+anmld-python settings.json initial.pdb target.pdb
 ```
 
 You can check `anmld-python --help` for more details on how to start a run.
