@@ -72,7 +72,7 @@ to load AMBER.
 {
     // ...
 
-    LD_method : "AMBER",
+    "LD_method" : "AMBER",
     "AMBER": {
         // ...
 
