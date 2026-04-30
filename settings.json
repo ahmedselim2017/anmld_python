@@ -3,9 +3,9 @@
     "mode_selection": "ORIGINAL",
     "LD_method": "OpenMM",
     "ANM_backend": null,
-    "cleanup": false,
+    "clean_temporary_files": false,
     "sanitization_max_retry": 10,
-    "anmld_settings": {
+    "ANMLD": {
         "n_steps": 100,
         "early_stopping_aa_rmsd": 0.0,
         "early_stopping_ca_rmsd": 0.0,
@@ -15,18 +15,18 @@
         "DF": 0.6,
         "max_mode": 30
     },
-    "amber_settings": {
+    "AMBER": {
         "ld_temp": 310.0,
         "min_step": 500,
         "ld_step": 100,
         "forcefield": "leaprc.protein.ff14SB",
-        "pmemd_prefix": "module load cuda/11.3 && module load amber/22_20231219 && ",
+        "pmemd_prefix": "",
         "pmemd_cmd": "pmemd.cuda",
         "pmemd_dpfp_cmd": "pmemd.cuda_DPFP",
-        "ambertools_prefix": "module load cuda/11.3 && module load amber/22_20231219 && ",
+        "ambertools_prefix": "",
         "pdb4amber_cmd": "pdb4amber",
-        "pdb4amber_prefix": "module load cuda/11.3 && module load amber/22_20231219 && ",
-        "ld": {
+        "pdb4amber_prefix": "",
+        "LD_EXPERT": {
             "imin": 0,
             "irest": 0,
             "ntx": 1,
@@ -45,7 +45,7 @@
             "ntb": 0,
             "cut": 1000.0
         },
-        "min": {
+        "MIN_EXPERT": {
             "imin": 1,
             "ncyc": 50,
             "ntmin": 1,
@@ -57,17 +57,16 @@
             "dx0": 0.01
         }
     },
-    "openmm_settings": {
+    "OpenMM": {
         "forcefield": "amber14/protein.ff14SB.xml",
         "min_step": 500,
         "ld_step": 100,
         "ld_temp": 310.0,
         "save_min": false,
         "save_ld": false,
-        "platform_name": "CUDA",
-        "platform_obj": null
+        "platform": "CUDA"
     },
-    "path_settings": {
+    "PATHS": {
         "info_csv": "info.csv",
         "info_rmsd_fig": "info_RMSDs.pdf",
         "info_sel_modes_fig": "info_sel_modes.pdf",
@@ -108,7 +107,7 @@
         "amber_pmemd_min_target_stdout": "AMBER_pmemd_min_target_stdout.txt",
         "amber_cpptraj_rewrite_stdout": "AMBER_cpptraj_rewrite_stdout.txt",
         "amber_cpptraj_align_stdout": "AMBER_cpptraj_align_stdout.txt",
-        "step_path_settings": {
+        "STEP_PATHS": {
             "step_anm_pdb": "STEP_{step}_ANM.pdb",
             "step_openmm_min": "STEP_{step}_OpenMM_min.pdb",
             "step_openmm_ld": "STEP_{step}_OpenMM_ld.pdb",
@@ -134,13 +133,13 @@
             "step_anmld_pdb": "STEP_{step}_ANMLD.pdb"
         }
     },
-    "crop_settings": {
+    "CROP": {
         "enable": false,
         "seq_id_cutoff": 0.75,
         "res_number_cutoff": 30,
         "connectedness_cutoff": 7.0
     },
-    "subprocess_settings": {
+    "SUBPROCESS": {
         "executable": "/bin/bash"
     }
 }

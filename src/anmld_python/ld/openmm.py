@@ -44,7 +44,7 @@ def add_H(
         try:
             modeller.addHydrogens(
                 mm_forcefield,
-                platform=app_settings.openmm_settings.platform_obj,
+                platform=app_settings.openmm_settings._platform_obj,
             )
             passed = True
             break
@@ -104,7 +104,7 @@ def setup_sims(
         topology=topology,
         system=min_system,
         integrator=min_integrator,
-        platform=MS.platform_obj,
+        platform=MS._platform_obj,
     )
 
     ld_system = mm_forcefield.createSystem(
@@ -124,7 +124,7 @@ def setup_sims(
         topology=topology,
         system=ld_system,
         integrator=ld_integrator,
-        platform=MS.platform_obj,
+        platform=MS._platform_obj,
     )
 
     return min_simulation, ld_simulation

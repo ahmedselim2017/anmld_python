@@ -120,7 +120,7 @@ def _run_pdbfixer(
 
     fixer = pdbfixer.PDBFixer(
         filename=str(structure_path.absolute()),
-        platform=app_settings.openmm_settings.platform_obj,
+        platform=app_settings.openmm_settings._platform_obj,
     )
 
     sanitization_logger.info(f"Replacing nonstandard residues")

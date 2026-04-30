@@ -92,14 +92,14 @@ def process_inputs(
 
         MS = app_settings.openmm_settings
         try:
-            MS.platform_obj = mm.Platform.getPlatformByName(MS.platform_name)
+            MS._platform_obj = mm.Platform.getPlatformByName(MS.platform_name)
             logger.info(f"Set OpenMM platform to {MS.platform_name}")
         except mm.OpenMMException:
             logger.warning(
                 f"The given platform {MS.platform_name} is not found."
                 " Using the default platform."
             )
-            MS.platform_obj = None
+            MS._platform_obj = None
 
     if app_settings.crop_settings.enable:
         logger.info("Cropping the initial and target structures.")

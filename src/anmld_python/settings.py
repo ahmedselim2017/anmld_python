@@ -1,15 +1,10 @@
 from pathlib import Path
 from typing import Literal, Optional
 
-from pydantic import (
-    Field,
-    PositiveInt,
-    PositiveFloat,
-    BaseModel,
-    PrivateAttr
-)
+from pydantic import Field, PositiveInt, PositiveFloat, BaseModel, PrivateAttr
 from pydantic_settings import BaseSettings
 from openmm import Platform
+
 
 class SubprocessSettings(BaseModel):
     shell: bool = Field(True, exclude=True)
@@ -17,11 +12,12 @@ class SubprocessSettings(BaseModel):
     check: bool = Field(True, exclude=True)
     executable: Path = Path("/bin/bash")
 
-class StepPathSettings(BaseSettings):
-    step_anm_pdb: str                = "STEP_{step}_ANM.pdb"
 
-    step_openmm_min: str    = "STEP_{step}_OpenMM_min.pdb"
-    step_openmm_ld: str     = "STEP_{step}_OpenMM_ld.pdb"
+class StepPathSettings(BaseSettings):
+    step_anm_pdb: str = "STEP_{step}_ANM.pdb"
+
+    step_openmm_min: str = "STEP_{step}_OpenMM_min.pdb"
+    step_openmm_ld: str  = "STEP_{step}_OpenMM_ld.pdb"
 
     step_amber_anm_pdb: str = "STEP_{step}_AMBERREADY_ANM.pdb"
 
@@ -31,13 +27,13 @@ class StepPathSettings(BaseSettings):
     step_amber_pmemd_sim_stdout: str        = "STEP_{step}_AMBER_pmemd_sim_stdout.txt"
     step_amber_cpptraj_align_stdout: str    = "STEP_{step}_AMBER_cpptraj_align_stdout.txt"
 
-    step_amber_tleap_anm_pdb: str    = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
-    step_amber_top: str     = "STEP_{step}_AMBER_raw.top"
-    step_amber_coord: str   = "STEP_{step}_AMBER_raw.coord"
+    step_amber_tleap_anm_pdb: str = "STEP_{step}_AMBER_tleap_anm_pdbs.in"
+    step_amber_top: str           = "STEP_{step}_AMBER_raw.top"
+    step_amber_coord: str         = "STEP_{step}_AMBER_raw.coord"
 
-    step_amber_min_out: str     = "STEP_{step}_AMBER_min.out"
-    step_amber_min_coord: str   = "STEP_{step}_AMBER_min.coord"
-    step_amber_min_rst: str     = "STEP_{step}_AMBER_min.rst"
+    step_amber_min_out: str   = "STEP_{step}_AMBER_min.out"
+    step_amber_min_coord: str = "STEP_{step}_AMBER_min.coord"
+    step_amber_min_rst: str   = "STEP_{step}_AMBER_min.rst"
 
     step_amber_sim_out: str     = "STEP_{step}_AMBER_sim.out"
     step_amber_sim_coord: str   = "STEP_{step}_AMBER_sim.coord"
@@ -46,7 +42,7 @@ class StepPathSettings(BaseSettings):
 
     step_amber_cpptraj_align_in: str      = "STEP_{step}_AMBER_sim_cpptraj_align.in"
     step_amber_cpptraj_rms_align_dat: str = "STEP_{step}_AMBER_rms.dat"
-    step_amber_cpptraj_algn_restart: str = "STEP_{step}_AMBER_algn.restart"
+    step_amber_cpptraj_algn_restart: str  = "STEP_{step}_AMBER_algn.restart"
 
     step_anmld_pdb: str = "STEP_{step}_ANMLD.pdb"
 
@@ -56,66 +52,64 @@ class StepPathSettings(BaseSettings):
         for key in dump:
             f_annot[key] = getattr(self, key)
             if isinstance(getattr(self, key), str):
-                f_annot[key] = getattr(self, key).format(
-                    step=f"{step:0{n_maxdigit}}"
-                )
+                f_annot[key] = getattr(self, key).format(step=f"{step:0{n_maxdigit}}")
 
         return StepPathSettings(**f_annot)
 
 
 class PathSettings(BaseSettings):
-    _out_dir: Path = PrivateAttr()
+    _out_dir: Path           = PrivateAttr()
     _out_settings_path: Path = PrivateAttr(Path("settings.json"))
 
-    info_csv: Path = Field(Path("info.csv"))
-    info_rmsd_fig: Path = Field(Path("info_RMSDs.pdf"))
+    info_csv: Path           = Field(Path("info.csv"))
+    info_rmsd_fig: Path      = Field(Path("info_RMSDs.pdf"))
     info_sel_modes_fig: Path = Field(Path("info_sel_modes.pdf"))
     info_df_values_fig: Path = Field(Path("info_df_values.pdf"))
 
-    init_structure: str     = "init.pdb"
-    target_structure: str   = "target.pdb"
+    init_structure: str   = "init.pdb"
+    target_structure: str = "target.pdb"
 
-    cropped_init_structure: str    = "cropped_init.pdb"
-    cropped_target_structure: str  = "cropped_target.pdb"
+    cropped_init_structure: str   = "cropped_init.pdb"
+    cropped_target_structure: str = "cropped_target.pdb"
 
-    filtered_init_structure: str    = "filtered_init.pdb"
-    filtered_target_structure: str  = "filtered_target.pdb"
+    filtered_init_structure: str   = "filtered_init.pdb"
+    filtered_target_structure: str = "filtered_target.pdb"
 
     sanitized_init_structure: str   = "sanitized_init.pdb"
     sanitized_target_structure: str = "sanitized_target.pdb"
 
-    openmm_min_init_pdb: str            = "OpenMM_min_init.pdb"
-    openmm_min_aligned_init_pdb: str    = "OpenMM_min_aligned_init.pdb"
-    openmm_min_target_pdb: str          = "OpenMM_min_target.pdb"
+    openmm_min_init_pdb: str         = "OpenMM_min_init.pdb"
+    openmm_min_aligned_init_pdb: str = "OpenMM_min_aligned_init.pdb"
+    openmm_min_target_pdb: str       = "OpenMM_min_target.pdb"
 
     amber_min_in: Path = Path("AMBER_min.in")
     amber_sim_in: Path = Path("AMBER_sim.in")
 
-    amber_pdb_init_top: Path    = Path("AMBER_pdb_initial.top")
-    amber_pdb_init_coord: Path  = Path("AMBER_pdb_initial.coord")
+    amber_pdb_init_top: Path   = Path("AMBER_pdb_initial.top")
+    amber_pdb_init_coord: Path = Path("AMBER_pdb_initial.coord")
 
-    amber_pdb_target_top: Path      = Path("AMBER_pdb_target.top")
-    amber_pdb_target_coord: Path    = Path("AMBER_pdb_target.coord")
+    amber_pdb_target_top: Path   = Path("AMBER_pdb_target.top")
+    amber_pdb_target_coord: Path = Path("AMBER_pdb_target.coord")
 
-    amber_tleap_init_in: Path       = Path("AMBER_tleap_initial.in")
+    amber_tleap_init_in: Path = Path("AMBER_tleap_initial.in")
 
-    amber_pdb_init_min_out: Path    = Path("AMBER_pdb_initial_min.out")
-    amber_pdb_init_min_coord: Path  = Path("AMBER_pdb_initial_min.coord")
-    amber_pdb_init_min_rst: Path    = Path("AMBER_pdb_initial_min.rst")
+    amber_pdb_init_min_out: Path   = Path("AMBER_pdb_initial_min.out")
+    amber_pdb_init_min_coord: Path = Path("AMBER_pdb_initial_min.coord")
+    amber_pdb_init_min_rst: Path   = Path("AMBER_pdb_initial_min.rst")
 
-    amber_pdb_target_min_out: Path      = Path("AMBER_pdb_target_min.out")
-    amber_pdb_target_min_coord: Path    = Path("AMBER_pdb_target_min.coord")
-    amber_pdb_target_min_rst: Path      = Path("AMBER_pdb_target_min.rst")
+    amber_pdb_target_min_out: Path   = Path("AMBER_pdb_target_min.out")
+    amber_pdb_target_min_coord: Path = Path("AMBER_pdb_target_min.coord")
+    amber_pdb_target_min_rst: Path   = Path("AMBER_pdb_target_min.rst")
 
-    amber_cpptraj_rewrite_init_in: Path       = Path("AMBER_cpptraj_rewrite_initial.in")
-    amber_pdb_rewrite_init_min_rst: Path    = Path("AMBER_initial_min.rst")
+    amber_cpptraj_rewrite_init_in: Path  = Path("AMBER_cpptraj_rewrite_initial.in")
+    amber_pdb_rewrite_init_min_rst: Path = Path("AMBER_initial_min.rst")
 
-    amber_cpptraj_align_target2initial_in: Path   = Path("AMBER_cpptraj_align_target2initial.in")
+    amber_cpptraj_align_target2initial_in: Path = Path("AMBER_cpptraj_align_target2initial.in")
     amber_rms_target_align_dat: Path            = Path("AMBER_rms_target_align.dat")
     amber_target_min_algn: Path                 = Path("AMBER_target_min_algn.rst")
 
-    amber_pdb_initial_min_pdb: Path     = Path("AMBER_pdb_initial_min.pdb")
-    amber_pdb_target_min_pdb: Path      = Path("AMBER_pdb_target_min.pdb")
+    amber_pdb_initial_min_pdb: Path = Path("AMBER_pdb_initial_min.pdb")
+    amber_pdb_target_min_pdb: Path  = Path("AMBER_pdb_target_min.pdb")
 
     amber_tleap_init_stdout: Path       = Path("AMBER_tleap_init_stdout.txt")
     amber_pmemd_min_init_stdout: Path   = Path("AMBER_pmemd_min_initial_stdout.txt")
@@ -123,91 +117,90 @@ class PathSettings(BaseSettings):
     amber_cpptraj_rewrite_stdout: Path  = Path("AMBER_cpptraj_rewrite_stdout.txt")
     amber_cpptraj_align_stdout: Path    = Path("AMBER_cpptraj_align_stdout.txt")
 
-
-    step_path_settings: StepPathSettings = Field(StepPathSettings() ,alias="STEP_PATHS")
+    step_path_settings: StepPathSettings = Field(StepPathSettings(), alias="STEP_PATHS")
 
 
 class AmberLDSettings(BaseSettings):
-    imin: int = 0
-    irest: int = 0
-    ntx: int = 1
-    ntt: int = 3
+    imin: int       = 0
+    irest: int      = 0
+    ntx: int        = 1
+    ntt: int        = 3
     gamma_ln: float = 5.0
-    ig: int = -1
-    dt: float = 0.002
-    ntc: int = 2
-    ntf: int = 2
-    ntwr: int = 1
-    ntpr: int = 1
-    ntwx: int = 1
-    ntwe: int = 1
-    igb: int = 1
-    saltcon: float = 0.1
-    ntb: int = 0
-    cut: float = 1000.0
+    ig: int         = -1
+    dt: float       = 0.002
+    ntc: int        = 2
+    ntf: int        = 2
+    ntwr: int       = 1
+    ntpr: int       = 1
+    ntwx: int       = 1
+    ntwe: int       = 1
+    igb: int        = 1
+    saltcon: float  = 0.1
+    ntb: int        = 0
+    cut: float      = 1000.0
 
 
 class AmberMinSettings(BaseSettings):
-    imin: int = 1
-    ncyc: int = 50
-    ntmin: int = 1
-    drms: float = 0.01
-    cut: float = 1000.0
-    ntb: int = 0
+    imin: int      = 1
+    ncyc: int      = 50
+    ntmin: int     = 1
+    drms: float    = 0.01
+    cut: float     = 1000.0
+    ntb: int       = 0
     saltcon: float = 0.1
-    igb: int = 1
-    dx0: float = 0.01
+    igb: int       = 1
+    dx0: float     = 0.01
+
 
 class AmberSettings(BaseSettings):
     ld_temp: PositiveFloat = Field(310)
-    min_step: PositiveInt = Field(500)
-    ld_step: PositiveInt = Field(100)
-    forcefield: str = Field("leaprc.protein.ff14SB")
-    pmemd_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
-    pmemd_cmd: str = "pmemd.cuda"
-    pmemd_dpfp_cmd: str = "pmemd.cuda_DPFP"
-    ambertools_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
-    pdb4amber_cmd: str = "pdb4amber"
-    pdb4amber_prefix: str = "module load cuda/11.3 && module load amber/22_20231219 && "
+    min_step: PositiveInt  = Field(500)
+    ld_step: PositiveInt   = Field(100)
+    forcefield: str        = Field("leaprc.protein.ff14SB")
+    pmemd_prefix: str      = Field("")
+    pmemd_cmd: str         = "pmemd.cuda"
+    pmemd_dpfp_cmd: str    = "pmemd.cuda_DPFP"
+    ambertools_prefix: str = Field("")
+    pdb4amber_cmd: str     = "pdb4amber"
+    pdb4amber_prefix: str  = Field("")
 
-    ld: AmberLDSettings = Field(AmberLDSettings(), alias="LD_EXPERT")
+    ld: AmberLDSettings   = Field(AmberLDSettings(), alias ="LD_EXPERT")
     min: AmberMinSettings = Field(AmberMinSettings(), alias="MIN_EXPERT")
 
 
 class OpenMMSettings(BaseSettings):
-    forcefield : str = Field("amber14/protein.ff14SB.xml")
-    min_step: PositiveInt = Field(500)
-    ld_step: PositiveInt = Field(100)
+    forcefield: str        = Field("amber14/protein.ff14SB.xml")
+    min_step: PositiveInt  = Field(500)
+    ld_step: PositiveInt   = Field(100)
     ld_temp: PositiveFloat = Field(310)
 
-    save_min: bool =Field(False)
-    save_ld: bool = Field(False)
+    save_min: bool = Field(False)
+    save_ld: bool  = Field(False)
 
-    platform_name: Literal["CPU", "OpenCL", "CUDA", "HIP"] = Field(
-        "CUDA", alias="platform"
-    )
-    platform_obj: Optional[Platform]  = Field(None, init=False)
+    platform_name: Literal["CPU", "OpenCL", "CUDA", "HIP"] = Field("CUDA", alias="platform")
+    _platform_obj: Optional[Platform]                      = PrivateAttr()
 
 
 class ANMLDSettings(BaseSettings):
-    n_steps: PositiveInt = Field(100)
-    early_stopping_aa_rmsd: float = Field(0)
-    early_stopping_ca_rmsd: float = Field(0)
+    n_steps: PositiveInt             = Field(100)
+    early_stopping_aa_rmsd: float    = Field(0)
+    early_stopping_ca_rmsd: float    = Field(0)
     continue_until_rmsd_cutoff: bool = Field(False)
 
-    rcut_ANM: PositiveFloat = Field(13.0)
-    gamma_ANM: float = Field(1.0)
-    DF: PositiveFloat = Field(0.6)
-    _step_DF: float | None = PrivateAttr()
-    # DF_SC_ratio: PositiveFloat = Field(1) TODO
-    max_mode: PositiveInt = Field(30)
+    rcut_ANM: PositiveFloat      = Field(13.0)
+    gamma_ANM: float             = Field(1.0)
+    DF: PositiveFloat            = Field(0.6)
+    _step_DF: float | None       = PrivateAttr()
+    # DF_SC_ratio: PositiveFloat = Field(1) NOTE
+    max_mode: PositiveInt        = Field(30)
 
 
 class CropSettings(BaseModel):
-    enable: bool = False
-    seq_id_cutoff: PositiveFloat = Field(0.75)
-    res_number_cutoff: PositiveInt = Field(30)
+    enable: bool                        = False
+    seq_id_cutoff: PositiveFloat        = Field(0.75)
+    res_number_cutoff: PositiveInt      = Field(30)
     connectedness_cutoff: PositiveFloat = Field(7)
+
 
 class AppSettings(BaseSettings):
     logging_level: Literal[
@@ -218,20 +211,18 @@ class AppSettings(BaseSettings):
         "ERROR",
         "CRITICAL",
     ] = "INFO"
-    mode_selection: Literal["ORIGINAL"] = "ORIGINAL"
-    LD_method: Literal["AMBER", "OpenMM"] = "OpenMM"
+    mode_selection: Literal["ORIGINAL"]        = "ORIGINAL"
+    LD_method: Literal["AMBER", "OpenMM"]      = "OpenMM"
     ANM_backend: Literal[None, "JAX", "NumPy"] = None
 
-    cleanup: bool = Field(False, alias="clean_temporary_files")
-
-    _different_topologies: bool = PrivateAttr(False)
+    cleanup: bool                       = Field(False, alias="clean_temporary_files")
+    _different_topologies: bool         = PrivateAttr(False)
     sanitization_max_retry: PositiveInt = 10
 
-    anmld_settings: ANMLDSettings = Field(ANMLDSettings(), alias="ANMLD")       # type: ignore
-    amber_settings: AmberSettings = Field(AmberSettings(), alias="AMBER")       # type: ignore
-    openmm_settings: OpenMMSettings = Field(OpenMMSettings(), alias="OpenMM")   # type: ignore
+    anmld_settings: ANMLDSettings   = Field(ANMLDSettings(), alias ="ANMLD")  # type: ignore
+    amber_settings: AmberSettings   = Field(AmberSettings(), alias ="AMBER")  # type: ignore
+    openmm_settings: OpenMMSettings = Field(OpenMMSettings(), alias="OpenMM")  # type: ignore
 
-    path_settings: PathSettings = Field(PathSettings(), alias="PATHS")      # type: ignore
-    crop_settings: CropSettings = Field(CropSettings(), alias="CROP")       # type: ignore
-    subprocess_settings: SubprocessSettings = Field(SubprocessSettings(), alias="SUBPROCESS") # type:ignore
-
+    path_settings: PathSettings             = Field(PathSettings(), alias      ="PATHS")  # type: ignore
+    crop_settings: CropSettings             = Field(CropSettings(), alias      ="CROP")  # type: ignore
+    subprocess_settings: SubprocessSettings = Field(SubprocessSettings(), alias="SUBPROCESS")  # type:ignore

@@ -13,7 +13,7 @@ You can run ANM-LD without installing locally using the Google Colab notebook:
 
 ## Installation
 
-> Note: It is recommended to install in a fresh Python environment
+> Note: It is recommended to install in a fresh Python environment.
 
 ### Using OpenMM for Langevin dynamics
 
@@ -22,15 +22,39 @@ git clone https://github.com/ahmedselim2017/anmld_python
 pip install "."
 ```
 
-To install with CUDA12 support:
+To install with CUDA12 support for Nvida GPUs:
 ```sh
 pip install ".[cuda12]"
 ```
 
-To install with HIP6 support:
+To install with HIP6 support for AMD GPUs:
 ```sh
 pip install ".[hip6]"
 ```
+
+The OpenMM platform can be selected using the `platform` field of the
+configuration file:
+
+```jsonc
+{
+    // ...
+
+    "OpenMM": {
+        // ...
+
+        // NOTE: only one platform can be selected
+        "platform": "CPU",      // Use CPU only
+        "platform": "CUDA",     // For Nvidia GPUs
+        "platform": "HIP",      // For AMD GPUs
+        "platform": "OpenCL",   // For other GPUs (Such as Apple silicon GPUs)
+
+        // ...
+    },
+
+    // ...
+}
+```
+
 
 ### Using AMBER for Langevin dynamics
 
@@ -39,16 +63,38 @@ git clone https://github.com/ahmedselim2017/anmld_python
 pip install "."
 ```
 
-To use AMBER, the `ambertools_prefix` and `pmemd_prefix` fields of the `AMBER`
-section must be modified depending on your system to load AMBER. The given
-command will be run before each of the AmberTools and PMEMD calls.
+To use AMBER, the `LD_method` must be set to `AMBER` in the configuration file.
+The `pmemd_prefix`, `ambertools_prefix`, and `pdb4amber_prefix` fields of the
+configuration are run before calling AMBER and must be modified to your system
+to load AMBER.
+
+```jsonc
+{
+    // ...
+
+    LD_method : "AMBER",
+    "AMBER": {
+        // ...
+
+        // The exact prefixes must be modified depending on your AMBER installation.
+        "pmemd_prefix": "module load cuda/11.3 && module load amber/22_20231219 && "
+        "ambertools_prefix": "module load cuda/11.3 && module load amber/22_20231219 && "
+        "pdb4amber_prefix": "module load cuda/11.3 && module load amber/22_20231219 && "
+
+        // ...
+    },
+
+    // ...
+}
+```
 
 ## Configuration
 
-Configuration of `anmld-python` can be performed with a `json` file.
-Unspecified settings will use their default values. The default configuration
-file that includes all of the settings that can be changed can be found at
-`settings.json`. 
+The default configuration can be found on `settings.json` file. Unspecified
+settings will use their default values. 
+
+> Note: Automated cropping and might produce unexpected artifacts. Manual
+examination of cropped structures is recommended.
 
 ## Running
 
@@ -58,12 +104,17 @@ You can run ANM-LD with:
 anmld-python settings.json initial.pdb target.pdb
 ```
 
-You can check `anmld-python --help` for more details on how to start a run.
+You can check `anmld-python --help` for more details on how to perform an
+ANM-LD run.
 
 The final predicted structures are saved as `STEP_[STEP_NUMBER]_ANMLD.pdb`. The
 intermediate structures, which have been deformed by ANM but have not yet
 undergone LD, are saved as `STEP_[STEP_NUMBER]_ANM.pdb`.
 
+The statistics for the ANM-LD steps will be written to `info.csv` by default.
+Additionally; figures for RMSD, selected modes, and `df` values per each step
+will be saved to `info_RMSDs.pdf`, `info_sel_modes.pdf`, `info_df_values.pdf`
+by default.
 
 ## Citing ANM-LD
 
