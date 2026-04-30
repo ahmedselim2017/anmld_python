@@ -77,9 +77,9 @@ to load AMBER.
         // ...
 
         // The exact prefixes must be modified depending on your AMBER installation.
-        "pmemd_prefix": "module load cuda/11.3 && module load amber/22_20231219 && "
-        "ambertools_prefix": "module load cuda/11.3 && module load amber/22_20231219 && "
-        "pdb4amber_prefix": "module load cuda/11.3 && module load amber/22_20231219 && "
+        "pmemd_prefix": "module load cuda/11.3 && module load amber/22_20231219 && ",
+        "ambertools_prefix": "module load cuda/11.3 && module load amber/22_20231219 && ",
+        "pdb4amber_prefix": "module load cuda/11.3 && module load amber/22_20231219 && ",
 
         // ...
     },
