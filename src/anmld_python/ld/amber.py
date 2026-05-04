@@ -492,7 +492,9 @@ def run_ld_step(
     aa_target = get_atomarray(PS._out_dir / PS.amber_pdb_target_min_pdb)
     aa_init = get_atomarray(PS._out_dir / PS.amber_pdb_initial_min_pdb)
 
-    step_info = {}
+    step_info = {
+        "structure": (PS._out_dir / SP.step_anmld_pdb).name,
+    }
     step_info["aa_rmsd_target"], step_info["ca_rmsd_target"] = calc_aa_ca_rmsd(
         aa_fixed=aa_target, aa_mobile=ld_aa, app_settings=app_settings
     )

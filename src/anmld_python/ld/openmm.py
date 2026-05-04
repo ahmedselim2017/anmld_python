@@ -264,6 +264,7 @@ def run_ld_step(
     step_info = {
         "aa_rmsd_target": ld_aa_rmsd_target,
         "ca_rmsd_target": ld_ca_rmsd_target,
+        "structure": (PS._out_dir / step_paths.step_anmld_pdb).name
     }
     step_info["aa_rmsd_init"], step_info["ca_rmsd_init"] = calc_aa_ca_rmsd(
         aa_fixed=aa_init, aa_mobile=ld_aa, app_settings=app_settings
