@@ -194,6 +194,8 @@ class ANMLDSettings(BaseSettings):
     # DF_SC_ratio: PositiveFloat = Field(1) NOTE
     max_mode: PositiveInt        = Field(30)
 
+    sparse_eigensolver: bool = Field(False)
+
 
 class CropSettings(BaseModel):
     enable: bool                        = False

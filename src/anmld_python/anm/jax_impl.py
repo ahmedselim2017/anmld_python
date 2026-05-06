@@ -57,10 +57,11 @@ def build_hessian(
     return hessian
 
 
-@partial(jax.jit, static_argnames=["mode_max"])
+@partial(jax.jit, static_argnames=["mode_max", "sparse"])
 def calc_modes(
     hessian: jnp.ndarray,
     mode_max: int = 30,
+    sparse: bool = False,
 ) -> tuple[jnp.ndarray, ...]:
     """
     Calculate the modes for the given Hessian matrix.
@@ -70,11 +71,19 @@ def calc_modes(
     Args:
         hessian: (3 * N_nodex, 3 * N_nodes) Hessian matrix
         mode_max: Number of non-trivial modes that should be calculated
+        sparse: Only available for Numpy implementation. Use iterative sparse
+                eigensolver.
 
     Returns:
         (mode_max,) shaped eigenvalues array
         (3 * N_nodes, mode_max) eigenvectors array
     """
+    if sparse:
+        raise NotImplementedError(
+            "Iterative sparse eigensolver option is only available for the"
+            " NumPy implementation."
+        )
+
     W, V = jnp.linalg.eigh(hessian)
 
     W = W[6 : mode_max + 6]

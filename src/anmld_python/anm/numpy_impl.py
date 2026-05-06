@@ -61,6 +61,7 @@ def build_hessian(
 def calc_modes(
     hessian: np.ndarray,
     mode_max: int = 30,
+    sparse: bool = False,
 ) -> tuple[np.ndarray, ...]:
     """
     Calculate the modes for the given Hessian matrix.
@@ -75,7 +76,13 @@ def calc_modes(
         (mode_max,) shaped eigenvalues array
         (3 * N_nodes, mode_max) eigenvectors array
     """
-    W, V = np.linalg.eigh(hessian)
+
+    if sparse:
+        import scipy.sparse.linalg
+
+        W, V = scipy.sparse.linalg.eigsh(hessian, k=mode_max + 6, which="SM")
+    else:
+        W, V = np.linalg.eigh(hessian)
 
     W = W[6 : mode_max + 6]
     V = V[:, 6 : mode_max + 6]

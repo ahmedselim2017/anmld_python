@@ -43,6 +43,7 @@ def run_step(
     W, V = ANM.calc_modes(
         hessian=hessian_step,
         mode_max=app_settings.anmld_settings.max_mode,
+        sparse=app_settings.anmld_settings.sparse_eigensolver
     )
 
     step_logger.debug("Calculated ANM modes")
