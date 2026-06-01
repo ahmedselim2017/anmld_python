@@ -59,7 +59,12 @@ def run_step(
     )
     match mode_selection:
         case "ORIGINAL":
-            from anmld_python.mode_selection.original import generate_structures
+            if app_settings.ANM_backend is None:
+                from anmld_python.mode_selection.original import generate_structures
+            elif app_settings.ANM_backend == "JAX":
+                from anmld_python.mode_selection.original.jax_impl import generate_structures
+            else:
+                from anmld_python.mode_selection.original.numpy_impl import generate_structures
 
             pred_aa, sel_info = generate_structures(
                 aa_step=aa_step,
