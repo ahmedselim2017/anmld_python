@@ -507,7 +507,7 @@ def main(
         )
 
     if out_dir is None:
-        out_name = f"{path_abs_structure_init.stem}_to_{path_abs_structure_target.stem}"
+        out_name = f"anmld_run_{path_abs_structure_init.stem}_to_{path_abs_structure_target.stem}"
         out_name = get_valid_filename(out_name)
 
         out_dir = Path(out_name)
