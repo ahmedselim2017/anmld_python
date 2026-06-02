@@ -23,6 +23,7 @@ from anmld_python.tools import (
     crop_structures,
     get_atomarray,
     sanitize_structure,
+    get_valid_filename,
 )
 
 try:
@@ -114,7 +115,7 @@ def process_inputs(
             target_path=path_abs_structure_target.absolute(),
             cropped_init_path=PS._out_dir / PS.cropped_init_structure,
             cropped_target_path=PS._out_dir / PS.cropped_target_structure,
-            crop_settings=app_settings.crop_settings
+            crop_settings=app_settings.crop_settings,
         )
         path_abs_structure_init = PS._out_dir / PS.cropped_init_structure
         path_abs_structure_target = PS._out_dir / PS.cropped_target_structure
@@ -485,7 +486,7 @@ def main(
     settings_path: Path,
     path_abs_structure_init: Path,
     path_abs_structure_target: Path,
-    out_dir: Path = Path("anmld_out"),
+    out_dir: Optional[Path] = None,
     chain_init: Optional[list[str]] = None,
     chain_target: Optional[list[str]] = None,
 ):
@@ -504,6 +505,18 @@ def main(
         raise ValueError(
             "Chain selection with AMBER backend is currently not supported"
         )
+
+    if out_dir is None:
+        out_name = f"{path_abs_structure_init.stem}_to_{path_abs_structure_target.stem}"
+        out_name = get_valid_filename(out_name)
+
+        out_dir = Path(out_name)
+        rep = 1
+        while out_dir.exists():
+            out_dir = out_dir.with_name(f"{out_name}_{rep}")
+            rep += 1
+
+        logger.info(f"Setting the output dir to {out_dir}")
 
     app_settings.path_settings._out_dir = out_dir
     app_settings.path_settings._out_dir.mkdir(parents=True)

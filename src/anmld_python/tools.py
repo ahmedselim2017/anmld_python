@@ -2,6 +2,7 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 from typing import Optional, cast
+import re
 
 from biotite.structure.atoms import AtomArray, AtomArrayStack
 from biotite.structure.io import save_structure
@@ -372,13 +373,16 @@ def crop_atomarrays(aa_A: AtomArray, aa_B: AtomArray, crop_settings: CropSetting
         seq_matched_aa_A = aa_A[np.isin(aa_A.chain_id, list(seq_matched_chains_A))]
         seq_matched_aa_B = aa_B[np.isin(aa_B.chain_id, list(seq_matched_chains_B))]
 
-        min_res_count = min(b_structure.get_residue_count(seq_matched_aa_A), b_structure.get_residue_count(seq_matched_aa_B))
+        min_res_count = min(
+            b_structure.get_residue_count(seq_matched_aa_A),
+            b_structure.get_residue_count(seq_matched_aa_B),
+        )
 
         seq_matched_aa_B, _, anchor_idx_A, anchor_idx_B = (
             b_structure.superimpose_homologs(
                 fixed=seq_matched_aa_A,
                 mobile=seq_matched_aa_B,
-                min_anchors=min_res_count
+                min_anchors=min_res_count,
             )
         )
 
@@ -479,3 +483,21 @@ def crop_structures(
 
     save_structure(file_path=cropped_init_path, array=cropped_init_aa)
     save_structure(file_path=cropped_target_path, array=cropped_target_aa)
+
+
+def get_valid_filename(name):
+    """
+    Return the given string converted to a string that can be used for a clean
+    filename. Remove leading and trailing spaces; convert other spaces to
+    underscores; and remove anything that is not an alphanumeric, dash,
+    underscore, or dot.
+    >>> get_valid_filename("john's portrait in 2004.jpg")
+    'johns_portrait_in_2004.jpg'
+
+    https://github.com/django/django/blob/main/django/utils/text.py
+    """
+    s = str(name).strip().replace(" ", "_").replace(".", "_")
+    s = re.sub(r"(?u)[^-\w.]", "", s)
+    if s in {"", ".."}:
+        raise ValueError("Could not derive file name from '%s'" % name)
+    return s
