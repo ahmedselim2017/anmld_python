@@ -286,9 +286,9 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
                     "The given initial structure is not fully connected"
                 )
             else:
-                raise NonConnectedStructureError(
-                    "ANMLD step produced a non-connected structure."
-                )
+                ld_logger.warning("ANMLD step produced a non-connected structure.")
+                app_settings.anmld_settings._step_DF /= 2
+                continue
 
         except (LDError, ValueError) as e:
             ld_logger.warning(
@@ -411,6 +411,7 @@ def analyze(cycle_info: list[dict], app_settings: AppSettings):
 
 
 def cleanup(app_settings: AppSettings):
+    # TODO: cleanup pdbfixer outputs as well
     PS = app_settings.path_settings
 
     if app_settings.LD_method == "AMBER":
