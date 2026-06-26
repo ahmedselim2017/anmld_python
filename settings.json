@@ -9,6 +9,7 @@
         "n_steps": 100,
         "early_stopping_aa_rmsd": 0.0,
         "early_stopping_ca_rmsd": 0.0,
+        "ca_rmsd_patience_count": 20,
         "continue_until_rmsd_cutoff": false,
         "rcut_ANM": 13.0,
         "gamma_ANM": 1.0,

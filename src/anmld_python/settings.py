@@ -187,6 +187,8 @@ class ANMLDSettings(BaseSettings):
     early_stopping_ca_rmsd: float    = Field(0)
     continue_until_rmsd_cutoff: bool = Field(False)
 
+    ca_rmsd_patience: int = Field(20)
+
     rcut_ANM: PositiveFloat      = Field(13.0)
     gamma_ANM: float             = Field(1.0)
     DF: PositiveFloat            = Field(0.6)

@@ -179,6 +179,9 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
     finished_setup = False
     step = 0
 
+    ca_rmsd_patience_count = 0
+    ca_rmsd_best = float("inf")
+
     cycle_info = []
     app_settings.anmld_settings._step_DF = app_settings.anmld_settings.DF
     while True:
@@ -326,6 +329,23 @@ def run_cycle(app_settings: AppSettings) -> list[dict]:
             if isinstance(pbar, tqdm_notebook):
                 pbar.container.children[1].bar_style = "success"
             break
+
+        if app_settings.anmld_settings.ca_rmsd_patience != 0:
+            if ca_rmsd_best < step_info["ca_rmsd_target"]:
+                ca_rmsd_patience_count += 1
+                if (
+                    ca_rmsd_patience_count
+                    >= app_settings.anmld_settings.ca_rmsd_patience
+                ):
+                    step_logger.warning(
+                        f"Early stopping as {float(step_info['ca_rmsd_target'])}"
+                        " C-alpha RMSD has not being improved over"
+                        f" {ca_rmsd_patience_count=} steps."
+                    )
+                    break
+            else:
+                ca_rmsd_patience_count = 0
+                ca_rmsd_best = step_info["ca_rmsd_target"]
 
         step_info["df"] = app_settings.anmld_settings._step_DF
         app_settings.anmld_settings._step_DF = app_settings.anmld_settings.DF
